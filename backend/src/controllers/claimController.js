@@ -1,0 +1,92 @@
+const claimService = require('../services/claimService');
+const verificationService = require('../services/verificationService');
+const { apiResponse } = require('../utils/apiResponse');
+
+const createClaim = async (req, res, next) => {
+  try {
+    const { itemId } = req.body;
+    if (!itemId) {
+      return res.status(400).json(apiResponse(false, 'Item ID is required'));
+    }
+    const claim = await claimService.createClaim(itemId, req.user._id);
+    return res.status(201).json(apiResponse(true, 'Claim created successfully', claim));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getClaims = async (req, res, next) => {
+  try {
+    const query = (req.user.role === 'admin' || req.user.role === 'staff') ? {} : { claimant: req.user._id };
+    const claims = await claimService.getClaims(query);
+    return res.status(200).json(apiResponse(true, 'Claims retrieved successfully', claims));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getClaimById = async (req, res, next) => {
+  try {
+    const claim = await claimService.getClaimById(req.params.id, req.user._id, req.user.role);
+    return res.status(200).json(apiResponse(true, 'Claim retrieved successfully', claim));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getClaimsByItemId = async (req, res, next) => {
+  try {
+    const claims = await claimService.getClaimsByItemId(req.params.itemId, req.user._id, req.user.role);
+    return res.status(200).json(apiResponse(true, 'Item claims retrieved successfully', claims));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const submitVerification = async (req, res, next) => {
+  try {
+    const { answers } = req.body;
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json(apiResponse(false, 'Answers must be an array'));
+    }
+    const claim = await claimService.submitVerification(req.params.id, req.user._id, answers);
+    return res.status(200).json(apiResponse(true, 'Verification submitted successfully', claim));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reviewClaim = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json(apiResponse(false, 'Only staff or admin can review claims'));
+    }
+    const { status, reviewNotes } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json(apiResponse(false, 'Invalid status. Must be approved or rejected.'));
+    }
+    const claim = await claimService.reviewClaim(req.params.id, req.user._id, status, reviewNotes);
+    return res.status(200).json(apiResponse(true, 'Claim reviewed successfully', claim));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getVerificationQuestions = async (req, res, next) => {
+  try {
+    const questions = await verificationService.getQuestionsForItem(req.params.itemId);
+    return res.status(200).json(apiResponse(true, 'Questions retrieved successfully', questions));
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  createClaim,
+  getClaims,
+  getClaimById,
+  getClaimsByItemId,
+  submitVerification,
+  reviewClaim,
+  getVerificationQuestions
+};
