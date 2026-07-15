@@ -10,11 +10,16 @@ try {
 
 const connectDB = require('./config/db');
 const app = require('./app');
+const http = require('http');
+const { initSocket } = require('./config/socket');
 
 const PORT = process.env.PORT || 5000;
 
+const server = http.createServer(app);
+initSocket(server);
+
 connectDB().then(() => {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
 });

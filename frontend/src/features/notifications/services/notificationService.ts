@@ -6,6 +6,7 @@ export interface Notification {
   type: string;
   title?: string;
   message: string;
+  relatedId: string;
   read: boolean;
   createdAt: string;
   updatedAt: string;

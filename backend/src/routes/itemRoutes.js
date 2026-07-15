@@ -11,5 +11,6 @@ router.get('/', itemController.getItems);
 router.get('/:id', itemController.getItemById);
 router.put('/:id', updateItemValidator, itemController.updateItem);
 router.delete('/:id', itemController.deleteItem);
+router.get('/:id/matches', itemController.getItemMatches);
 
 module.exports = router;

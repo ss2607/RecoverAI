@@ -46,9 +46,15 @@ const itemSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['open', 'matched', 'claimed', 'returned', 'closed'],
+    enum: ['open', 'matched', 'claimed', 'returned', 'closed', 'claim_pending', 'awaiting_exchange'],
     default: 'open'
   },
+  verificationQuestions: [{
+    question: {
+      type: String,
+      required: true
+    }
+  }],
   reportedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

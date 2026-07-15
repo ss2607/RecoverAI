@@ -120,9 +120,96 @@ const runMatchingForItem = async (newItem) => {
           matchedFields,
           status: 'pending'
         });
+
+        // Emit Socket.IO Events
+        try {
+          const { emitToUser } = require('../config/socket');
+          emitToUser(newItem.reportedBy.toString(), 'new_match', { item: newItem, score });
+          emitToUser(item.reportedBy.toString(), 'new_match', { item, score });
+        } catch (err) {
+          console.error('Error emitting new_match socket events:', err);
+        }
       }
     }
   }
+};
+
+const getItemMatches = async (itemId) => {
+  const currentItem = await Item.findById(itemId);
+  if (!currentItem) {
+    throw new apiError('Item not found', 404);
+  }
+
+  const oppositeType = currentItem.type === 'lost' ? 'found' : 'lost';
+
+  // Find opposite-type open/matched items, excluding this item
+  const candidates = await Item.find({
+    type: oppositeType,
+    status: { $in: ['open', 'matched'] },
+    _id: { $ne: itemId }
+  });
+
+  const matches = [];
+
+  for (const candidate of candidates) {
+    let score = 0;
+    const matchedFieldsList = [];
+    const matchingTags = [];
+
+    // Category = 40
+    if (currentItem.category && candidate.category && currentItem.category.toLowerCase() === candidate.category.toLowerCase()) {
+      score += 40;
+      matchedFieldsList.push('category');
+    }
+
+    // Color = 20
+    if (currentItem.color && candidate.color && currentItem.color.toLowerCase() === candidate.color.toLowerCase()) {
+      score += 20;
+      matchedFieldsList.push('color');
+    }
+
+    // Brand = 15
+    if (currentItem.brand && candidate.brand && currentItem.brand.toLowerCase() === candidate.brand.toLowerCase()) {
+      score += 15;
+      matchedFieldsList.push('brand');
+    }
+
+    // Each matching tag = 5
+    if (currentItem.aiTags && currentItem.aiTags.length > 0 && candidate.aiTags && candidate.aiTags.length > 0) {
+      const currentTags = currentItem.aiTags.map(t => t.toLowerCase());
+      const candidateTags = candidate.aiTags.map(t => t.toLowerCase());
+      
+      const intersecting = currentTags.filter(t => candidateTags.includes(t));
+      if (intersecting.length > 0) {
+        score += intersecting.length * 5;
+        matchedFieldsList.push('aiTags');
+        intersecting.forEach(tag => matchingTags.push(tag));
+      }
+    }
+
+    // Max score = 100
+    if (score > 100) {
+      score = 100;
+    }
+
+    if (score >= 40) {
+      matches.push({
+        item: candidate,
+        similarityScore: score,
+        matchedFields: {
+          category: matchedFieldsList.includes('category'),
+          color: matchedFieldsList.includes('color'),
+          brand: matchedFieldsList.includes('brand'),
+          matchingTags: matchingTags
+        }
+      });
+    }
+  }
+
+  // Sort descending
+  matches.sort((a, b) => b.similarityScore - a.similarityScore);
+
+  return matches;
 };
 
 module.exports = {
@@ -130,5 +217,6 @@ module.exports = {
   getMatchById,
   getMatchesByItemId,
   deleteMatch,
-  runMatchingForItem
+  runMatchingForItem,
+  getItemMatches
 };

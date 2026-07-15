@@ -1,5 +1,7 @@
 const itemService = require('../services/itemService');
 const { apiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
+const matchingService = require('../services/matchingService');
 const { validationResult } = require('express-validator');
 
 const createItem = async (req, res, next) => {
@@ -63,10 +65,20 @@ const deleteItem = async (req, res, next) => {
   }
 };
 
+const getItemMatches = async (req, res, next) => {
+  try {
+    const matches = await matchingService.getItemMatches(req.params.id);
+    return res.status(200).json(new ApiResponse(200, matches, 'Matches retrieved successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createItem,
   getItems,
   getItemById,
   updateItem,
-  deleteItem
+  deleteItem,
+  getItemMatches
 };

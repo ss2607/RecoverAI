@@ -26,4 +26,20 @@ const notificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
+notificationSchema.pre('save', function(next) {
+  this.isNewDocument = this.isNew;
+  next();
+});
+
+notificationSchema.post('save', function(doc) {
+  if (doc.isNewDocument) {
+    try {
+      const { emitToUser } = require('../config/socket');
+      emitToUser(doc.user.toString(), 'notification_created', doc);
+    } catch (err) {
+      console.error('Error emitting socket notification:', err);
+    }
+  }
+});
+
 module.exports = mongoose.model('Notification', notificationSchema);

@@ -58,15 +58,21 @@ const submitVerification = async (req, res, next) => {
 
 const reviewClaim = async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
-      return res.status(403).json(apiResponse(false, 'Only staff or admin can review claims'));
-    }
     const { status, reviewNotes } = req.body;
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json(apiResponse(false, 'Invalid status. Must be approved or rejected.'));
+    if (!['approved', 'rejected', 'needs_info'].includes(status)) {
+      return res.status(400).json(apiResponse(false, 'Invalid status. Must be approved, rejected, or needs_info.'));
     }
-    const claim = await claimService.reviewClaim(req.params.id, req.user._id, status, reviewNotes);
+    const claim = await claimService.reviewClaim(req.params.id, req.user._id, req.user.role, status, reviewNotes);
     return res.status(200).json(apiResponse(true, 'Claim reviewed successfully', claim));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const confirmReturn = async (req, res, next) => {
+  try {
+    const claim = await claimService.confirmReturn(req.params.id, req.user._id);
+    return res.status(200).json(apiResponse(true, 'Item returned confirmation successful', claim));
   } catch (error) {
     next(error);
   }
@@ -88,5 +94,6 @@ module.exports = {
   getClaimsByItemId,
   submitVerification,
   reviewClaim,
+  confirmReturn,
   getVerificationQuestions
 };

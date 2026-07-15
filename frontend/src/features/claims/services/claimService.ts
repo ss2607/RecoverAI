@@ -12,7 +12,7 @@ export interface Claim {
   _id: string;
   item: Item;
   claimant: { _id: string, name: string, email: string };
-  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'needs_info' | 'completed';
   verificationScore: number | null;
   answers: Answer[];
   reviewedBy?: { _id: string, name: string };
@@ -47,7 +47,12 @@ export const submitVerification = async (id: string, answers: Answer[]): Promise
   return response.data;
 };
 
-export const reviewClaim = async (id: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<ApiResponse<Claim>> => {
+export const reviewClaim = async (id: string, status: 'approved' | 'rejected' | 'needs_info', reviewNotes?: string): Promise<ApiResponse<Claim>> => {
   const response = await axios.put<ApiResponse<Claim>>(`${API_URL}/${id}/review`, { status, reviewNotes });
+  return response.data;
+};
+
+export const confirmReturn = async (id: string): Promise<ApiResponse<Claim>> => {
+  const response = await axios.post<ApiResponse<Claim>>(`${API_URL}/${id}/confirm-return`);
   return response.data;
 };

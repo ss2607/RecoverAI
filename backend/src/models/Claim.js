@@ -13,7 +13,7 @@ const claimSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'under_review', 'approved', 'rejected'],
+    enum: ['pending', 'under_review', 'approved', 'rejected', 'needs_info', 'completed'],
     default: 'pending'
   },
   verificationScore: {

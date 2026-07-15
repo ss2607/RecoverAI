@@ -72,7 +72,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         }
       });
 
-      if (response.success && response.data?.url) {
+      if ((response.statusCode === 200 || response.statusCode === 201) && response.data?.url) {
         onUploadSuccess(response.data.url);
       } else {
         setError(response.message || 'Upload failed');

@@ -15,8 +15,9 @@ export interface Item {
   dateLostFound: string;
   images: string[];
   aiTags: string[];
-  status: 'open' | 'matched' | 'claimed' | 'returned' | 'closed';
+  status: 'open' | 'matched' | 'claimed' | 'returned' | 'closed' | 'claim_pending' | 'awaiting_exchange';
   reportedBy: string | { _id: string, name: string, email: string };
+  verificationQuestions?: { _id: string; question: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -62,5 +63,15 @@ export const updateItem = async (id: string, data: Partial<ItemPayload>): Promis
 
 export const deleteItem = async (id: string): Promise<any> => {
   const response = await axios.delete<ApiResponse<Item>>(`${API_URL}/${id}`);
+  return response.data.data;
+};
+
+export const getItemMatches = async (id: string): Promise<any> => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get<ApiResponse<any>>(`${API_URL}/${id}/matches`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
   return response.data.data;
 };

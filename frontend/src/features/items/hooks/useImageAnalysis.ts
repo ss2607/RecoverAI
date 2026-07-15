@@ -14,15 +14,30 @@ export const useImageAnalysis = () => {
 
       const response = await analyzeImageUrl(imageUrl);
 
-      if (response.success && response.data) {
+      console.log("===== HOOK RESPONSE =====");
+      console.log(response);
+
+      if (
+        (response.statusCode === 200 || response.statusCode === 201) &&
+        response.data
+      ) {
+        console.log("===== HOOK DATA =====");
+        console.log(response.data);
+
         setAnalysisResult(response.data);
         return response.data;
-      } else {
-        setError(response.message || 'Analysis failed');
-        return null;
       }
+
+      setError(response.message || "Analysis failed");
+      return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during analysis';
+      console.error(err);
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "An error occurred during analysis";
+
       setError(errorMessage);
       return null;
     } finally {
