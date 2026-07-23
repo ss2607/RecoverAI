@@ -9,14 +9,15 @@ import {
   Button, 
   CircularProgress,
   List,
-  Divider
+  Divider,
+  Tooltip
 } from '@mui/material';
 import { 
   Check as CheckIcon,
   LocationOnOutlined as LocationIcon,
   CalendarTodayOutlined as CalendarIcon
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface MatchItem {
   _id: string;
@@ -47,6 +48,22 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
   similarityScore,
   matchedFields
 }) => {
+  const navigate = useNavigate();
+
+  // Robust ID extraction logic supporting various shapes
+  const targetId = 
+    item?._id || 
+    (item as any)?.id || 
+    (item as any)?.item?._id || 
+    (item as any)?.matchedItem?._id || 
+    (item as any)?.itemId || 
+    (item as any)?.matchedItemId;
+
+  const handleNavigate = () => {
+    if (targetId) {
+      navigate(`/items/${targetId}`);
+    }
+  };
   // Score color determinations
   const getProgressColor = () => {
     if (similarityScore >= 90) return '#4F8A5B'; // Green
@@ -233,16 +250,31 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
 
         {/* View Match Button */}
         <Box sx={{ mt: 'auto' }}>
-          <Button
-            component={Link}
-            to={`/items/${item._id}`}
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ py: 1, borderRadius: '12px', fontWeight: 700, textTransform: 'none' }}
-          >
-            View Match
-          </Button>
+          {targetId ? (
+            <Button
+              onClick={handleNavigate}
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ py: 1, borderRadius: '12px', fontWeight: 700, textTransform: 'none' }}
+            >
+              View Match
+            </Button>
+          ) : (
+            <Tooltip title="Match unavailable">
+              <span>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  disabled
+                  sx={{ py: 1, borderRadius: '12px', fontWeight: 700, textTransform: 'none' }}
+                >
+                  View Match
+                </Button>
+              </span>
+            </Tooltip>
+          )}
         </Box>
       </CardContent>
     </Card>

@@ -17,6 +17,27 @@ const getQuestionsForItem = async (itemId) => {
   if (!item) {
     throw new apiError('Item not found', 404);
   }
+  if (!item.verificationQuestions || item.verificationQuestions.length === 0) {
+    const geminiService = require('./geminiService');
+    try {
+      const result = await geminiService.generateVerificationQuestions(item);
+      if (result && Array.isArray(result.questions) && result.questions.length > 0) {
+        item.verificationQuestions = result.questions.map(q => ({ question: q }));
+      } else {
+        throw new Error("No questions returned from Gemini");
+      }
+    } catch (err) {
+      console.error("Failed to generate verification questions on the fly:", err);
+      item.verificationQuestions = [
+        { question: "Can you provide a serial number or receipt?" },
+        { question: "Where did you lose/find the item?" },
+        { question: "What brand/color/markings does the item have?" },
+        { question: "Describe any contents inside or unique characteristics." },
+        { question: "What condition is the item in?" }
+      ];
+    }
+    await item.save();
+  }
   return item.verificationQuestions || [];
 };
 

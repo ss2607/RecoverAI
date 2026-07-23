@@ -16,6 +16,7 @@ const analyzeImage = async (imageUrl) => {
 
     const prompt = `
 Analyze this image of a lost or found item.
+Write a concise, natural Lost & Found description (30–50 words). Mention only information visible in the image (item type, color, visible condition, unique visible characteristics). Do NOT invent missing information.
 
 Return ONLY valid JSON in this exact format:
 
@@ -24,6 +25,7 @@ Return ONLY valid JSON in this exact format:
   "color": "",
   "brand": "",
   "condition": "",
+  "description": "",
   "tags": []
 }
 `;
@@ -69,6 +71,7 @@ Return ONLY valid JSON in this exact format:
       color: parsed.color || "",
       brand: parsed.brand || "",
       condition: parsed.condition || "",
+      description: parsed.description || "",
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
     };
   } catch (err) {

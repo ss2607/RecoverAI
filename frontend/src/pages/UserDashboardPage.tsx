@@ -33,7 +33,8 @@ import {
   ArrowForward as ArrowForwardIcon,
   LocationOnOutlined as LocationOnOutlinedIcon,
   CalendarTodayOutlined as CalendarTodayOutlinedIcon,
-  NotificationsActiveOutlined as NotificationsActiveIcon
+  NotificationsActiveOutlined as NotificationsActiveIcon,
+  AssignmentOutlined as AssignmentIcon
 } from '@mui/icons-material';
 
 export const UserDashboardPage = () => {
@@ -108,15 +109,26 @@ export const UserDashboardPage = () => {
   const foundCount = userItems.filter(i => i.type === 'found').length;
   
   // Claims made by user
-  const userClaims = claims.filter(c => c.claimant?._id === userId);
+  const userClaims = claims.filter(c => {
+    const claimantId = typeof c.claimant === 'object' ? c.claimant?._id : c.claimant;
+    return claimantId === userId;
+  });
 
-  const pendingClaims = userClaims.filter(c => c.status === 'pending' || c.status === 'under_review').length;
-  const approvedClaims = userClaims.filter(c => c.status === 'approved').length;
-  const rejectedClaims = userClaims.filter(c => c.status === 'rejected').length;
-  const needsInfoClaims = userClaims.filter(c => c.status === 'needs_info').length;
+  // Owner Dashboard stats
+  const pendingOwnerClaimsCount = claims.filter(c => {
+    const itemReporterId = typeof c.item?.reportedBy === 'object' ? c.item.reportedBy._id : c.item?.reportedBy;
+    const claimantId = typeof c.claimant === 'object' ? c.claimant?._id : c.claimant;
+    return itemReporterId === userId && claimantId !== userId && (c.status === 'pending' || c.status === 'under_review');
+  }).length;
+
+  // Claimant Dashboard stats
+  const myClaimsCount = userClaims.length;
+
+  const claimantUnderReviewCount = userClaims.filter(c => c.status === 'pending' || c.status === 'under_review').length;
+  const claimantApprovedCount = userClaims.filter(c => c.status === 'approved' || c.status === 'completed').length;
+  const claimantRejectedCount = userClaims.filter(c => c.status === 'rejected').length;
 
   // Item exchange stats
-  const awaitingExchangeCount = userItems.filter(i => (i.status as string) === 'awaiting_exchange').length;
   const returnedCount = userItems.filter(i => (i.status as string) === 'returned').length;
 
   const stats = [
@@ -138,43 +150,43 @@ export const UserDashboardPage = () => {
     },
     { 
       label: 'Pending Claims', 
-      value: String(pendingClaims), 
-      desc: 'Claims under review', 
-      trend: pendingClaims > 0 ? `+${pendingClaims} pending` : 'None', 
+      value: String(pendingOwnerClaimsCount), 
+      desc: 'Claims on your items', 
+      trend: pendingOwnerClaimsCount > 0 ? `+${pendingOwnerClaimsCount} pending` : 'None', 
       icon: <AutoAwesomeOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#B88A5A' 
     },
     { 
-      label: 'Approved Claims', 
-      value: String(approvedClaims), 
-      desc: 'Approved matches', 
-      trend: approvedClaims > 0 ? `+${approvedClaims} approved` : 'None', 
+      label: 'My Claims', 
+      value: String(myClaimsCount), 
+      desc: 'Claims submitted by you', 
+      trend: myClaimsCount > 0 ? `+${myClaimsCount} total` : 'None', 
+      icon: <AssignmentIcon sx={{ fontSize: 22 }} />, 
+      color: '#2E6CB5' 
+    },
+    { 
+      label: 'Under Review', 
+      value: String(claimantUnderReviewCount), 
+      desc: 'Your active claims', 
+      trend: claimantUnderReviewCount > 0 ? `${claimantUnderReviewCount} under review` : 'None', 
+      icon: <AutoAwesomeOutlinedIcon sx={{ fontSize: 22 }} />, 
+      color: '#D59B3A' 
+    },
+    { 
+      label: 'Approved', 
+      value: String(claimantApprovedCount), 
+      desc: 'Approved claims', 
+      trend: claimantApprovedCount > 0 ? `+${claimantApprovedCount} approved` : 'None', 
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#4F8A5B' 
     },
     { 
-      label: 'Rejected Claims', 
-      value: String(rejectedClaims), 
-      desc: 'Rejected requests', 
-      trend: rejectedClaims > 0 ? `+${rejectedClaims} total` : 'None', 
+      label: 'Rejected', 
+      value: String(claimantRejectedCount), 
+      desc: 'Rejected claims', 
+      trend: claimantRejectedCount > 0 ? `${claimantRejectedCount} rejected` : 'None', 
       icon: <ReportProblemOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#B24C4C' 
-    },
-    { 
-      label: 'Needs Info', 
-      value: String(needsInfoClaims), 
-      desc: 'Information requested', 
-      trend: needsInfoClaims > 0 ? `${needsInfoClaims} action item` : 'None', 
-      icon: <ReportProblemOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#D59B3A' 
-    },
-    { 
-      label: 'Awaiting Exchange', 
-      value: String(awaitingExchangeCount), 
-      desc: 'Exchanges in progress', 
-      trend: awaitingExchangeCount > 0 ? `${awaitingExchangeCount} pending` : 'None', 
-      icon: <Inventory2OutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#2E6CB5' 
     },
     { 
       label: 'Returned Items', 

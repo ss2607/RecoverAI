@@ -4,9 +4,9 @@ import { useParams, Link } from 'react-router-dom';
 import { getItemById } from '../../items/services/itemService';
 import type { Item } from '../../items/services/itemService';
 import { ClaimForm } from '../components/ClaimForm';
-import { 
+import {
   ArrowBack as ArrowBackIcon,
-  VerifiedUserOutlined as VerifiedUserIcon 
+  VerifiedUserOutlined as VerifiedUserIcon
 } from '@mui/icons-material';
 
 export const CreateClaimPage: React.FC = () => {
@@ -18,16 +18,18 @@ export const CreateClaimPage: React.FC = () => {
   useEffect(() => {
     const fetchItem = async () => {
       if (!itemId) return;
+
       try {
         setLoading(true);
-        const res = await getItemById(itemId);
-        if (res.success) {
-          setItem(res.data);
-        } else {
-          setError('Failed to load item details');
-        }
+
+        const itemData = await getItemById(itemId);
+
+        setItem(itemData);
+        setError(null);
+
       } catch (err) {
-        setError('Error loading item details');
+        console.error(err);
+        setError("Failed to load item details");
       } finally {
         setLoading(false);
       }
@@ -80,16 +82,16 @@ export const CreateClaimPage: React.FC = () => {
             Complete the verification process to request ownership of this item.
           </Typography>
         </Box>
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1, 
-            px: 2, 
-            py: 1, 
-            borderRadius: '10px', 
-            border: '1px solid rgba(79, 138, 91, 0.25)', 
-            bgcolor: 'rgba(79, 138, 91, 0.04)' 
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 1,
+            borderRadius: '10px',
+            border: '1px solid rgba(79, 138, 91, 0.25)',
+            bgcolor: 'rgba(79, 138, 91, 0.04)'
           }}
         >
           <VerifiedUserIcon sx={{ fontSize: 16, color: '#4F8A5B' }} />

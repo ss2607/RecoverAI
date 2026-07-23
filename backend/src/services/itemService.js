@@ -1,5 +1,5 @@
 const Item = require('../models/Item');
-const { apiError } = require('../utils/apiError'); 
+const ApiError = require('../utils/apiError');
 const matchingService = require('./matchingService');
 const geminiService = require('./geminiService');
 
@@ -27,9 +27,9 @@ const createItem = async (itemData) => {
   }
 
   await item.save();
-  
+
   matchingService.runMatchingForItem(item).catch(err => console.error("Matching error:", err));
-  
+
   return item;
 };
 
@@ -41,7 +41,7 @@ const getItems = async (query = {}) => {
 const getItemById = async (id) => {
   const item = await Item.findById(id).populate('reportedBy', 'name email');
   if (!item) {
-    throw new apiError('Item not found', 404);
+    throw new ApiError(404, 'Item not found');
   }
   return item;
 };
@@ -49,13 +49,13 @@ const getItemById = async (id) => {
 const updateItem = async (id, userId, userRole, updateData) => {
   const item = await Item.findById(id);
   if (!item) {
-    throw new apiError('Item not found', 404);
+    throw new ApiError(404, 'Item not found');
   }
-  
+
   if (item.reportedBy.toString() !== userId.toString() && userRole !== 'admin') {
-    throw new apiError('Not authorized to update this item', 403);
+    throw new ApiError(403, 'Not authorized to update this item');
   }
-  
+
   Object.assign(item, updateData);
   await item.save();
   return item;
@@ -64,13 +64,13 @@ const updateItem = async (id, userId, userRole, updateData) => {
 const deleteItem = async (id, userId, userRole) => {
   const item = await Item.findById(id);
   if (!item) {
-    throw new apiError('Item not found', 404);
+    throw new ApiError(404, 'Item not found');
   }
-  
+
   if (item.reportedBy.toString() !== userId.toString() && userRole !== 'admin') {
-    throw new apiError('Not authorized to delete this item', 403);
+    throw new ApiError(403, 'Not authorized to delete this item');
   }
-  
+
   await item.deleteOne();
   return item;
 };

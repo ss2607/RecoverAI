@@ -191,9 +191,10 @@ export const ReportItemPage: React.FC = () => {
 
     setFormData(prev => ({
       ...prev,
-      category: result.category || "",
-      color: result.color || "",
-      brand: result.brand || "",
+      category: prev.category ? prev.category : (result.category || ""),
+      color: prev.color ? prev.color : (result.color || ""),
+      brand: prev.brand ? prev.brand : (result.brand || ""),
+      description: prev.description ? prev.description : (result.description || ""),
     }));
 
     setAiResult({
@@ -227,7 +228,8 @@ export const ReportItemPage: React.FC = () => {
         location: formData.location,
         dateLostFound: formData.dateLostFound,
         images: formData.images,
-        status: formData.status as 'open' | 'resolved'
+        status: formData.status as 'open' | 'resolved',
+        aiTags: aiTags
       };
 
       const newItem = await createItem(payload);

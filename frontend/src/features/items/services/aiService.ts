@@ -7,6 +7,7 @@ export interface ImageAnalysisData {
   color: string;
   brand: string;
   condition: string;
+  description: string;
   tags: string[];
 }
 

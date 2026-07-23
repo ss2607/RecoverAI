@@ -10,16 +10,16 @@ import {
   Avatar,
   Stack,
   Skeleton,
-  LinearProgress,
   Card,
   CardContent,
-  CardMedia
+  CardMedia,
+  Tooltip
 } from '@mui/material';
 import { useParams, Link } from 'react-router-dom';
 import { getItemById, getItems, getItemMatches } from '../services/itemService';
 import type { Item } from '../services/itemService';
 import { AIRecommendationCard } from '../components/AIRecommendationCard';
-import { 
+import {
   ArrowBack as ArrowBackIcon,
   LocationOnOutlined as LocationOnOutlinedIcon,
   CalendarTodayOutlined as CalendarTodayOutlinedIcon,
@@ -42,7 +42,6 @@ interface SimilarItemCardProps {
   id: string;
   title: string;
   category: string;
-  confidence: string;
   location: string;
   date: string;
   status: string;
@@ -53,16 +52,15 @@ export const SimilarItemCard = ({
   id,
   title,
   category,
-  confidence,
   location,
   date,
   status,
   image
 }: SimilarItemCardProps) => {
   return (
-    <Card 
+    <Card
       elevation={0}
-      sx={{ 
+      sx={{
         minWidth: 280,
         maxWidth: 280,
         borderRadius: '14px',
@@ -77,36 +75,22 @@ export const SimilarItemCard = ({
       }}
     >
       <Box sx={{ height: 140, overflow: 'hidden', position: 'relative' }}>
-        <Box 
+        <Box
           component="img"
           src={image}
           alt={title}
           sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
-        <Chip 
+        <Chip
           label={status.toUpperCase()}
           color={status === 'lost' ? 'error' : 'success'}
           size="small"
-          sx={{ 
-            position: 'absolute', 
-            top: 12, 
-            right: 12, 
-            fontWeight: 800, 
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            fontWeight: 800,
             fontSize: '0.65rem',
-            height: '20px'
-          }}
-        />
-        <Chip 
-          label={`${confidence} Match`}
-          size="small"
-          sx={{ 
-            position: 'absolute', 
-            bottom: 12, 
-            left: 12, 
-            fontWeight: 800, 
-            fontSize: '0.65rem',
-            bgcolor: '#7B5B3D',
-            color: '#FFFCF8',
             height: '20px'
           }}
         />
@@ -118,7 +102,7 @@ export const SimilarItemCard = ({
         <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 0.5, mb: 1.5, color: 'text.primary', minHeight: 36, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {title}
         </Typography>
-        
+
         <Stack spacing={0.5} mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <LocationOnOutlinedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
@@ -134,11 +118,11 @@ export const SimilarItemCard = ({
           </Box>
         </Stack>
 
-        <Button 
-          component={Link} 
-          to={`/items/${id}`} 
-          variant="outlined" 
-          fullWidth 
+        <Button
+          component={Link}
+          to={`/items/${id}`}
+          variant="outlined"
+          fullWidth
           size="small"
           sx={{ py: 0.8, borderRadius: '10px', fontWeight: 700 }}
         >
@@ -158,6 +142,25 @@ export const ItemDetailsPage = () => {
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [error, setError] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [shareSuccess, setShareSuccess] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: item?.title || 'RecoverAI Report',
+          text: item?.description || 'Check out this report on RecoverAI.',
+          url: window.location.href
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Error sharing link', err);
+    }
+  };
 
   const fetchMatches = async () => {
     if (!id) return;
@@ -182,14 +185,27 @@ export const ItemDetailsPage = () => {
         if (id) {
           const data = await getItemById(id);
           setItem(data);
-          
+
           // Fetch similar category items from registry
-          const allItems = await getItems();
-          if (Array.isArray(allItems)) {
-            const filtered = allItems.filter(
-              (i: Item) => i._id !== id && i.category === data.category
-            );
-            setSimilarItems(filtered.slice(0, 3));
+          try {
+            const allItems = await getItems();
+
+            if (Array.isArray(allItems)) {
+              const filtered = allItems.filter(
+                (i: Item) => i._id !== id && i.category === data.category
+              );
+
+              const seenIds = new Set();
+              const uniqueSimilar = filtered.filter((i: Item) => {
+                if (seenIds.has(i._id)) return false;
+                seenIds.add(i._id);
+                return true;
+              });
+
+              setSimilarItems(uniqueSimilar.slice(0, 3));
+            }
+          } catch (err) {
+            console.error("Failed to load similar items", err);
           }
 
           // Fetch matching suggestions
@@ -240,15 +256,15 @@ export const ItemDetailsPage = () => {
   if (error || !item) {
     return (
       <Container maxWidth="md" sx={{ py: 12, textAlign: 'center' }} className="fade-in">
-        <Box 
-          sx={{ 
-            width: 80, 
-            height: 80, 
-            borderRadius: '50%', 
-            bgcolor: 'rgba(178, 76, 76, 0.08)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
+        <Box
+          sx={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            bgcolor: 'rgba(178, 76, 76, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             mx: 'auto',
             mb: 3,
             border: '1px solid rgba(178, 76, 76, 0.15)'
@@ -272,8 +288,8 @@ export const ItemDetailsPage = () => {
   const categoryStr = item.category || 'General';
   const typeStr = item.type || 'lost';
   const statusStr = item.status || 'open';
-  const dateStr = item.dateLostFound 
-    ? new Date(item.dateLostFound).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) 
+  const dateStr = item.dateLostFound
+    ? new Date(item.dateLostFound).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : 'Unknown Date';
   const locationStr = item.location || 'Unknown Location';
   const brandStr = item.brand || 'Unspecified';
@@ -282,11 +298,11 @@ export const ItemDetailsPage = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 6 }} className="fade-in">
       {/* Back link */}
-      <Button 
-        component={Link} 
-        to="/items" 
-        startIcon={<ArrowBackIcon />} 
-        sx={{ mb: 4, fontWeight: 700, color: 'text.secondary', '&:hover': { color: 'text.primary' } }} 
+      <Button
+        component={Link}
+        to="/items"
+        startIcon={<ArrowBackIcon />}
+        sx={{ mb: 4, fontWeight: 700, color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
       >
         Back to Directory
       </Button>
@@ -300,23 +316,23 @@ export const ItemDetailsPage = () => {
             size="small"
             sx={{ fontWeight: 800, letterSpacing: '0.05em', height: 24, fontSize: '0.65rem' }}
           />
-          <Chip 
-            label={statusStr.toUpperCase()} 
-            variant="outlined" 
+          <Chip
+            label={statusStr.toUpperCase()}
+            variant="outlined"
             size="small"
-            sx={{ 
-              fontWeight: 700, 
+            sx={{
+              fontWeight: 700,
               borderColor: 'rgba(123, 91, 61, 0.25)',
               color: 'text.secondary',
               height: 24,
               fontSize: '0.65rem'
-            }} 
+            }}
           />
-          <Chip 
+          <Chip
             icon={<AutoAwesomeIcon sx={{ fontSize: '12px !important', color: '#4F8A5B !important' }} />}
-            label={item.aiTags && item.aiTags.length > 0 ? "AI Tags Active" : "Analysis Pending"} 
+            label={item.aiTags && item.aiTags.length > 0 ? "AI Tags Active" : "Analysis Pending"}
             size="small"
-            sx={{ 
+            sx={{
               height: 24,
               fontSize: '0.65rem',
               fontWeight: 700,
@@ -344,11 +360,11 @@ export const ItemDetailsPage = () => {
 
       {/* Main Grid split */}
       <Grid container spacing={5}>
-        
+
         {/* Left Side: Images & Detailed Content */}
         <Grid item xs={12} md={7.5}>
           <Stack spacing={4}>
-            
+
             {/* SECTION 2: Image Gallery */}
             <Card elevation={0} sx={{ p: 2, borderRadius: '18px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8' }}>
               <Grid container spacing={2}>
@@ -358,9 +374,9 @@ export const ItemDetailsPage = () => {
                     height="420"
                     image={images[activeImageIndex]}
                     alt={item.title}
-                    sx={{ 
-                      borderRadius: '12px', 
-                      objectFit: 'cover', 
+                    sx={{
+                      borderRadius: '12px',
+                      objectFit: 'cover',
                       width: '100%',
                       border: '1px solid rgba(231, 221, 209, 0.4)',
                       transition: 'all 0.3s ease'
@@ -368,14 +384,14 @@ export const ItemDetailsPage = () => {
                   />
                 </Grid>
                 <Grid item xs={12} sm={2.5}>
-                  <Stack 
-                    direction={{ xs: 'row', sm: 'column' }} 
-                    spacing={1.5} 
-                    sx={{ 
-                      height: '100%', 
-                      overflowX: 'auto', 
+                  <Stack
+                    direction={{ xs: 'row', sm: 'column' }}
+                    spacing={1.5}
+                    sx={{
+                      height: '100%',
+                      overflowX: 'auto',
                       overflowY: 'auto',
-                      maxHeight: { xs: 'auto', sm: 420 } 
+                      maxHeight: { xs: 'auto', sm: 420 }
                     }}
                   >
                     {images.map((imgUrl, index) => (
@@ -410,7 +426,7 @@ export const ItemDetailsPage = () => {
                 <Typography variant="h5" sx={{ fontWeight: 800, mb: 3, letterSpacing: '-0.01em' }}>
                   Item Description & Parameters
                 </Typography>
-                
+
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.7 }}>
                   {item.description || 'No detailed description provided.'}
                 </Typography>
@@ -465,11 +481,11 @@ export const ItemDetailsPage = () => {
             </Card>
 
             {/* SECTION 4: AI Analysis Card */}
-            <Card 
+            <Card
               elevation={0}
-              sx={{ 
-                borderRadius: '18px', 
-                border: '1px solid #E7DDD1', 
+              sx={{
+                borderRadius: '18px',
+                border: '1px solid #E7DDD1',
                 bgcolor: '#FFFCF8',
                 position: 'relative',
                 overflow: 'hidden'
@@ -508,26 +524,17 @@ export const ItemDetailsPage = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2.5 }}>
-                      <Box display="flex" justifyContent="space-between" mb={0.75}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          Visual Match Confidence
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'success.main' }}>
-                          92% Similarity
-                        </Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={92} 
-                        color="success"
-                        sx={{ height: 6, borderRadius: 3, bgcolor: '#E7DDD1' }}
-                      />
-                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1.5 }}>
+                      AI Tags
+                    </Typography>
                     <Box display="flex" gap={1} flexWrap="wrap">
-                      <Chip label="#Electronic" size="small" sx={{ fontSize: '0.65rem' }} />
-                      <Chip label={brandStr} size="small" sx={{ fontSize: '0.65rem' }} />
-                      <Chip label={categoryStr} size="small" sx={{ fontSize: '0.65rem' }} />
+                      {item.aiTags && item.aiTags.length > 0 ? (
+                        item.aiTags.map((tag, index) => (
+                          <Chip key={index} label={tag.startsWith('#') ? tag : `#${tag}`} size="small" sx={{ fontSize: '0.65rem' }} />
+                        ))
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">No AI tags available</Typography>
+                      )}
                     </Box>
                   </Grid>
                 </Grid>
@@ -540,37 +547,79 @@ export const ItemDetailsPage = () => {
                 <Typography variant="h5" sx={{ fontWeight: 800, mb: 3, letterSpacing: '-0.01em' }}>
                   Recovery Progression Track
                 </Typography>
-                <Stack 
-                  spacing={3} 
-                  sx={{ 
-                    position: 'relative', 
-                    pl: 3.5, 
-                    '&::before': { 
-                      content: '""', 
-                      position: 'absolute', 
-                      left: '11px', 
-                      top: '8px', 
-                      bottom: '8px', 
-                      width: '2px', 
-                      bgcolor: '#E7DDD1' 
-                    } 
+                <Stack
+                  spacing={3}
+                  sx={{
+                    position: 'relative',
+                    pl: 3.5,
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: '11px',
+                      top: '8px',
+                      bottom: '8px',
+                      width: '2px',
+                      bgcolor: '#E7DDD1'
+                    }
                   }}
                 >
-                  <Box sx={{ position: 'relative' }}>
-                    <Box sx={{ position: 'absolute', left: '-33px', top: '3px', width: '12px', height: '12px', borderRadius: '50%', bgcolor: '#4F8A5B', border: '2.5px solid #FFFCF8' }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>Report Created & Logged</Typography>
-                    <Typography variant="caption" color="text.secondary">Item successfully entered in our registry database.</Typography>
-                  </Box>
-                  <Box sx={{ position: 'relative' }}>
-                    <Box sx={{ position: 'absolute', left: '-33px', top: '3px', width: '12px', height: '12px', borderRadius: '50%', bgcolor: '#B88A5A', border: '2.5px solid #FFFCF8' }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>AI Analysis Completed</Typography>
-                    <Typography variant="caption" color="text.secondary">Computer vision category model detected category: {categoryStr}.</Typography>
-                  </Box>
-                  <Box sx={{ position: 'relative' }}>
-                    <Box sx={{ position: 'absolute', left: '-33px', top: '3px', width: '12px', height: '12px', borderRadius: '50%', bgcolor: '#D59B3A', border: '2.5px solid #FFFCF8' }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>Verification Pending</Typography>
-                    <Typography variant="caption" color="text.secondary">Awaiting owner response for credential screening.</Typography>
-                  </Box>
+                  {(() => {
+                    const milestones = [
+                      { key: 'created', title: 'Report Created & Logged', desc: 'Item successfully entered in our registry database.' },
+                      { key: 'ai_analyzed', title: 'AI Analysis Completed', desc: `Computer vision category model detected category: ${categoryStr}.` },
+                      { key: 'potential_match', title: 'Potential Match Found', desc: 'High-confidence similarity match suggested by Gemini.' },
+                      { key: 'claim_submitted', title: 'Claim Submitted & Review', desc: 'Claimant credentials and ownership questions under review.' },
+                      { key: 'exchange_ready', title: 'Awaiting Owner Exchange', desc: 'Both parties coordinating the return meeting details.' },
+                      { key: 'resolved', title: 'Item Returned', desc: 'Exchange confirmed. The case has been resolved.' }
+                    ];
+
+                    let currentMilestoneIndex = 0;
+                    if (statusStr === 'open') {
+                      currentMilestoneIndex = 1;
+                    } else if (statusStr === 'matched') {
+                      currentMilestoneIndex = 2;
+                    } else if (statusStr === 'claim_pending' || statusStr === 'claimed') {
+                      currentMilestoneIndex = 3;
+                    } else if (statusStr === 'awaiting_exchange') {
+                      currentMilestoneIndex = 4;
+                    } else if (statusStr === 'returned') {
+                      currentMilestoneIndex = 5;
+                    }
+
+                    let steps = [];
+                    if (statusStr === 'closed') {
+                      steps = [
+                        { title: 'Report Created & Logged', desc: 'Item successfully entered in our registry database.', color: '#4F8A5B' },
+                        { title: 'Case Closed', desc: 'This report has been marked closed and is no longer active.', color: '#B24C4C' }
+                      ];
+                    } else {
+                      steps = milestones.map((m, idx) => {
+                        let color = '#9E9E9E'; // gray
+                        if (statusStr === 'returned') {
+                          color = '#4F8A5B'; // green
+                        } else {
+                          if (idx < currentMilestoneIndex) {
+                            color = '#4F8A5B'; // green
+                          } else if (idx === currentMilestoneIndex) {
+                            color = '#D59B3A'; // orange
+                          }
+                        }
+                        return {
+                          title: m.title,
+                          desc: m.desc,
+                          color
+                        };
+                      });
+                    }
+
+                    return steps.map((step, index) => (
+                      <Box key={index} sx={{ position: 'relative' }}>
+                        <Box sx={{ position: 'absolute', left: '-33px', top: '3px', width: '12px', height: '12px', borderRadius: '50%', bgcolor: step.color, border: '2.5px solid #FFFCF8' }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>{step.title}</Typography>
+                        <Typography variant="caption" color="text.secondary">{step.desc}</Typography>
+                      </Box>
+                    ));
+                  })()}
                 </Stack>
               </CardContent>
             </Card>
@@ -590,11 +639,11 @@ export const ItemDetailsPage = () => {
                   This item was reported near: <strong>{locationStr}</strong>.
                 </Typography>
                 {/* Visual Map Placeholder */}
-                <Box 
-                  sx={{ 
-                    height: 200, 
-                    borderRadius: '12px', 
-                    bgcolor: 'background.default', 
+                <Box
+                  sx={{
+                    height: 200,
+                    borderRadius: '12px',
+                    bgcolor: 'background.default',
                     border: '1px solid #E7DDD1',
                     display: 'flex',
                     alignItems: 'center',
@@ -605,7 +654,7 @@ export const ItemDetailsPage = () => {
                 >
                   <MapIcon sx={{ fontSize: 32, color: 'primary.main', opacity: 0.6 }} />
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Map preview not loaded (Development Mock)
+                    Interactive map will be available in a future update.
                   </Typography>
                 </Box>
               </CardContent>
@@ -616,20 +665,20 @@ export const ItemDetailsPage = () => {
 
         {/* Right Side: Actions Panel & Verification */}
         <Grid item xs={12} md={4.5}>
-          <Stack 
-            spacing={4} 
-            sx={{ 
-              position: { md: 'sticky' }, 
-              top: { md: 100 } 
+          <Stack
+            spacing={4}
+            sx={{
+              position: { md: 'sticky' },
+              top: { md: 100 }
             }}
           >
-            
+
             {/* SECTION 8: Action Panel */}
-            <Card 
+            <Card
               elevation={0}
-              sx={{ 
-                borderRadius: '18px', 
-                border: '1px solid #E7DDD1', 
+              sx={{
+                borderRadius: '18px',
+                border: '1px solid #E7DDD1',
                 bgcolor: '#FFFCF8',
                 boxShadow: '0 8px 30px rgba(123, 91, 61, 0.04)'
               }}
@@ -638,12 +687,12 @@ export const ItemDetailsPage = () => {
                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>
                   Recovery Options
                 </Typography>
-                
+
                 <Stack spacing={2}>
-                  <Button 
-                    component={Link} 
-                    to={`/claims/create/${item._id}`} 
-                    variant="contained" 
+                  <Button
+                    component={Link}
+                    to={`/claims/create/${item._id}`}
+                    variant="contained"
                     color="primary"
                     fullWidth
                     size="large"
@@ -651,22 +700,27 @@ export const ItemDetailsPage = () => {
                   >
                     Claim this Item
                   </Button>
-                  
-                  <Button 
-                    variant="outlined" 
-                    color="primary"
-                    fullWidth
-                    size="large"
-                    startIcon={<ChatIcon />}
-                    sx={{ py: 1.5, fontWeight: 700 }}
-                  >
-                    Contact Finder
-                  </Button>
-                  
-                  <Button 
+
+                  <Tooltip title="Coming soon">
+                    <span>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        fullWidth
+                        size="large"
+                        disabled
+                        startIcon={<ChatIcon />}
+                        sx={{ py: 1.5, fontWeight: 700 }}
+                      >
+                        Contact Finder
+                      </Button>
+                    </span>
+                  </Tooltip>
+
+                  <Button
                     component={Link}
                     to={`/qr/generate/${item._id}`}
-                    variant="text" 
+                    variant="text"
                     fullWidth
                     startIcon={<QrCodeIcon />}
                     sx={{ justifyContent: 'flex-start', color: 'text.secondary', fontWeight: 600 }}
@@ -674,34 +728,45 @@ export const ItemDetailsPage = () => {
                     Generate QR Tag
                   </Button>
 
-                  <Button 
-                    variant="text" 
+                  <Button
+                    variant="text"
                     fullWidth
+                    onClick={handleShare}
                     startIcon={<ShareIcon />}
                     sx={{ justifyContent: 'flex-start', color: 'text.secondary', fontWeight: 600 }}
                   >
-                    Share Item Report
+                    {shareSuccess ? "Link Copied!" : "Share Item Report"}
                   </Button>
 
-                  <Button 
-                    variant="text" 
-                    fullWidth
-                    startIcon={<BookmarkIcon />}
-                    sx={{ justifyContent: 'flex-start', color: 'text.secondary', fontWeight: 600 }}
-                  >
-                    Save Item to Watchlist
-                  </Button>
-                  
+                  <Tooltip title="Coming soon">
+                    <span>
+                      <Button
+                        variant="text"
+                        fullWidth
+                        disabled
+                        startIcon={<BookmarkIcon />}
+                        sx={{ justifyContent: 'flex-start', color: 'text.secondary', fontWeight: 600 }}
+                      >
+                        Save Item to Watchlist
+                      </Button>
+                    </span>
+                  </Tooltip>
+
                   <Divider sx={{ my: 1 }} />
 
-                  <Button 
-                    variant="text" 
-                    fullWidth
-                    startIcon={<WarningIcon />}
-                    sx={{ justifyContent: 'flex-start', color: '#B24C4C', fontWeight: 600, '&:hover': { bgcolor: 'rgba(178, 76, 76, 0.04)' } }}
-                  >
-                    Report Incorrect Info
-                  </Button>
+                  <Tooltip title="Coming soon">
+                    <span>
+                      <Button
+                        variant="text"
+                        fullWidth
+                        disabled
+                        startIcon={<WarningIcon />}
+                        sx={{ justifyContent: 'flex-start', color: '#B24C4C', fontWeight: 600, '&:hover': { bgcolor: 'rgba(178, 76, 76, 0.04)' } }}
+                      >
+                        Report Incorrect Info
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </Stack>
               </CardContent>
             </Card>
@@ -718,12 +783,22 @@ export const ItemDetailsPage = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(184, 138, 90, 0.04)', border: '1px solid rgba(184, 138, 90, 0.15)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'text.primary' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
                     Claims screening active
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.5, fontWeight: 500 }}>
-                    To claim ownership of this MacBook Pro, you must verify the serial numbers or list identifying modifications during checkout.
-                  </Typography>
+                  {item.verificationQuestions && item.verificationQuestions.length > 0 ? (
+                    <ol style={{ margin: 0, paddingLeft: '1.2rem', color: 'rgba(0,0,0,0.7)', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                      {item.verificationQuestions.map((q: any, idx: number) => (
+                        <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                          {q.question}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.5, fontWeight: 500 }}>
+                      Verification questions have not been generated yet.
+                    </Typography>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -751,25 +826,25 @@ export const ItemDetailsPage = () => {
           </Grid>
         ) : aiMatches.length === 0 ? (
           /* Premium Empty State */
-          <Box 
-            sx={{ 
-              py: 8, 
-              px: 2, 
-              textAlign: 'center', 
-              borderRadius: '20px', 
+          <Box
+            sx={{
+              py: 8,
+              px: 2,
+              textAlign: 'center',
+              borderRadius: '20px',
               border: '1px solid #E7DDD1',
-              bgcolor: '#FFFCF8' 
+              bgcolor: '#FFFCF8'
             }}
           >
-            <Box 
-              sx={{ 
-                width: 80, 
-                height: 80, 
-                borderRadius: '50%', 
-                bgcolor: 'rgba(184, 138, 90, 0.08)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                bgcolor: 'rgba(184, 138, 90, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 mx: 'auto',
                 mb: 3,
                 border: '1px solid rgba(184, 138, 90, 0.12)'
@@ -778,14 +853,14 @@ export const ItemDetailsPage = () => {
               <AutoAwesomeIcon sx={{ fontSize: 32, color: '#B88A5A' }} />
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
-              No Similar Reports Found
+              No AI Matches Found Yet
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto', mb: 4, lineHeight: 1.6, fontWeight: 500 }}>
-              We'll continue checking for new reports automatically. You can also trigger an immediate index refresh.
+              We'll continue scanning new reports automatically for potential ownership matches.
             </Typography>
-            <Button 
-              onClick={fetchMatches} 
-              variant="outlined" 
+            <Button
+              onClick={fetchMatches}
+              variant="outlined"
               color="primary"
               sx={{ px: 4, fontWeight: 700, borderRadius: '12px' }}
             >
@@ -809,7 +884,7 @@ export const ItemDetailsPage = () => {
                   <CardContent sx={{ p: 2.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Highest Confidence</Typography>
                     <Typography variant="h4" sx={{ fontWeight: 850, mt: 1, color: '#4F8A5B' }}>
-                      {Math.max(...aiMatches.map(m => m.similarityScore))}%
+                      {aiMatches.length > 0 ? Math.max(...aiMatches.map(m => m.similarityScore)) : 0}%
                     </Typography>
                   </CardContent>
                 </Card>
@@ -819,7 +894,7 @@ export const ItemDetailsPage = () => {
                   <CardContent sx={{ p: 2.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Average Match</Typography>
                     <Typography variant="h4" sx={{ fontWeight: 850, mt: 1, color: '#D59B3A' }}>
-                      {Math.round(aiMatches.reduce((acc, curr) => acc + curr.similarityScore, 0) / aiMatches.length)}%
+                      {aiMatches.length > 0 ? Math.round(aiMatches.reduce((acc, curr) => acc + curr.similarityScore, 0) / aiMatches.length) : 0}%
                     </Typography>
                   </CardContent>
                 </Card>
@@ -840,7 +915,7 @@ export const ItemDetailsPage = () => {
             <Grid container spacing={3}>
               {aiMatches.map((matchData, idx) => (
                 <Grid item xs={12} sm={6} md={4} key={idx}>
-                  <AIRecommendationCard 
+                  <AIRecommendationCard
                     item={matchData.item}
                     similarityScore={matchData.similarityScore}
                     matchedFields={matchData.matchedFields}
@@ -859,14 +934,14 @@ export const ItemDetailsPage = () => {
         </Typography>
         {similarItems.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
-            No similar items found in registry.
+            No similar reports available.
           </Typography>
         ) : (
-          <Stack 
-            direction="row" 
-            spacing={3} 
-            sx={{ 
-              overflowX: 'auto', 
+          <Stack
+            direction="row"
+            spacing={3}
+            sx={{
+              overflowX: 'auto',
               pb: 2,
               scrollBehavior: 'smooth',
               '&::-webkit-scrollbar': { height: '6px' },
@@ -874,12 +949,11 @@ export const ItemDetailsPage = () => {
             }}
           >
             {similarItems.map((similarItem) => (
-              <SimilarItemCard 
+              <SimilarItemCard
                 key={similarItem._id}
                 id={similarItem._id}
                 title={similarItem.title}
                 category={similarItem.category}
-                confidence="90%"
                 location={similarItem.location}
                 date={new Date(similarItem.dateLostFound).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 status={similarItem.type}

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = '/api/items';
+const API_URL = 'http://localhost:5010/api/items';
 
 export interface Item {
   _id: string;
@@ -33,6 +33,7 @@ export interface ItemPayload {
   dateLostFound: string;
   images?: string[];
   status?: string;
+  aiTags?: string[];
 }
 
 interface ApiResponse<T> {
@@ -42,27 +43,80 @@ interface ApiResponse<T> {
 }
 
 export const getItems = async (): Promise<any> => {
-  const response = await axios.get<ApiResponse<Item[]>>(API_URL);
+  const token = localStorage.getItem("token");
+
+  const response = await axios.get<ApiResponse<Item[]>>(
+    API_URL,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
   return response.data.data;
 };
 
 export const getItemById = async (id: string): Promise<any> => {
-  const response = await axios.get<ApiResponse<Item>>(`${API_URL}/${id}`);
+  const token = localStorage.getItem("token");
+
+  const response = await axios.get<ApiResponse<Item>>(
+    `${API_URL}/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
   return response.data.data;
 };
-
 export const createItem = async (data: ItemPayload): Promise<any> => {
-  const response = await axios.post<ApiResponse<Item>>(API_URL, data);
+  const token = localStorage.getItem("token");
+
+  const response = await axios.post<ApiResponse<Item>>(
+    API_URL,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
   return response.data.data;
 };
 
-export const updateItem = async (id: string, data: Partial<ItemPayload>): Promise<any> => {
-  const response = await axios.put<ApiResponse<Item>>(`${API_URL}/${id}`, data);
+export const updateItem = async (
+  id: string,
+  data: Partial<ItemPayload>
+): Promise<any> => {
+  const token = localStorage.getItem("token");
+
+  const response = await axios.put<ApiResponse<Item>>(
+    `${API_URL}/${id}`,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
   return response.data.data;
 };
-
 export const deleteItem = async (id: string): Promise<any> => {
-  const response = await axios.delete<ApiResponse<Item>>(`${API_URL}/${id}`);
+  const token = localStorage.getItem("token");
+
+  const response = await axios.delete<ApiResponse<Item>>(
+    `${API_URL}/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
   return response.data.data;
 };
 

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Grid, 
-  TextField, 
-  Card, 
-  CardContent, 
-  Stack, 
-  Chip, 
-  Divider, 
-  Avatar, 
-  LinearProgress, 
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  TextField,
+  Card,
+  CardContent,
+  Stack,
+  Chip,
+  Divider,
+  Avatar,
+  LinearProgress,
   CircularProgress,
   Stepper,
   Step,
@@ -23,11 +23,11 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import type { Item } from '../../items/services/itemService';
-import { createClaim, submitVerification } from '../services/claimService';
+import { createClaim } from '../services/claimService';
 import { getVerificationQuestions } from '../services/verificationService';
 import type { VerificationQuestion } from '../services/verificationService';
 import type { Answer } from '../services/claimService';
-import { 
+import {
   CloudUploadOutlined as CloudUploadIcon,
   VerifiedUserOutlined as VerifiedUserIcon,
   SecurityOutlined as SecurityIcon,
@@ -120,47 +120,45 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
     sessionStorage.setItem(autosaveKey, JSON.stringify(dataToSave));
   };
 
-  // Load Verification Questions when advancing to questions step
+  // Load Verification Questions when component mounts or item changes
   useEffect(() => {
-    if (activeStep === 2 && questions.length === 0) {
-      if (item.verificationQuestions && item.verificationQuestions.length > 0) {
-        setQuestions(item.verificationQuestions as any);
-        const initialAnswers: Record<string, string> = { ...answers };
-        item.verificationQuestions.forEach(q => {
-          if (initialAnswers[q._id] === undefined) {
-            initialAnswers[q._id] = '';
+    if (!item) return;
+
+    if (item.verificationQuestions && item.verificationQuestions.length > 0) {
+      setQuestions(item.verificationQuestions as any);
+      const initialAnswers: Record<string, string> = { ...answers };
+      item.verificationQuestions.forEach(q => {
+        if (initialAnswers[q._id] === undefined) {
+          initialAnswers[q._id] = '';
+        }
+      });
+      setAnswers(initialAnswers);
+    } else {
+      const fetchQuestions = async () => {
+        try {
+          setLoadingQuestions(true);
+          const res = await getVerificationQuestions(item._id);
+          if (res.success && Array.isArray(res.data)) {
+            setQuestions(res.data);
+            const initialAnswers: Record<string, string> = { ...answers };
+            res.data.forEach(q => {
+              if (initialAnswers[q._id] === undefined) {
+                initialAnswers[q._id] = '';
+              }
+            });
+            setAnswers(initialAnswers);
+          } else {
+            setSubmitError('Failed to load verification questions.');
           }
-        });
-        setAnswers(initialAnswers);
-        saveState(2, claimId, initialAnswers);
-      } else {
-        const fetchQuestions = async () => {
-          try {
-            setLoadingQuestions(true);
-            const res = await getVerificationQuestions(item._id);
-            if (res.success && Array.isArray(res.data)) {
-              setQuestions(res.data);
-              const initialAnswers: Record<string, string> = { ...answers };
-              res.data.forEach(q => {
-                if (initialAnswers[q._id] === undefined) {
-                  initialAnswers[q._id] = '';
-                }
-              });
-              setAnswers(initialAnswers);
-              saveState(2, claimId, initialAnswers);
-            } else {
-              setSubmitError('Failed to load verification questions.');
-            }
-          } catch (err) {
-            setSubmitError('An error occurred while loading questions.');
-          } finally {
-            setLoadingQuestions(false);
-          }
-        };
-        fetchQuestions();
-      }
+        } catch (err) {
+          setSubmitError('An error occurred while loading questions.');
+        } finally {
+          setLoadingQuestions(false);
+        }
+      };
+      fetchQuestions();
     }
-  }, [activeStep, item, questions.length, answers, claimId]);
+  }, [item]);
 
   // Inline Validation Helpers
   const validateIdentity = () => {
@@ -258,28 +256,8 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
       saveState(1);
     } else if (activeStep === 1) {
       if (!validateOwnership()) return;
-      // Start claim in backend and obtain claim ID
-      try {
-        setIsLoading(true);
-        setSubmitError(null);
-        if (!claimId) {
-          const res = await createClaim(item._id);
-          if (res.success && res.data) {
-            setClaimId(res.data._id);
-            setActiveStep(2);
-            saveState(2, res.data._id);
-          } else {
-            setSubmitError(res.message || 'Failed to initiate claim.');
-          }
-        } else {
-          setActiveStep(2);
-          saveState(2, claimId);
-        }
-      } catch (err: any) {
-        setSubmitError(err.response?.data?.message || 'Error creating claim');
-      } finally {
-        setIsLoading(false);
-      }
+      setActiveStep(2);
+      saveState(2);
     } else if (activeStep === 2) {
       // Questions Validation
       const unanswered = questions.some(q => !answers[q._id]?.trim());
@@ -302,7 +280,13 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
 
   // Submit Final Answers
   const handleSubmitClaim = async () => {
-    if (!claimId) return;
+    // Validate again that all questions have answers
+    const unanswered = questions.some(q => !answers[q._id]?.trim());
+    if (unanswered) {
+      setSubmitError('Please answer all verification questions.');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setSubmitError(null);
@@ -311,16 +295,17 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
         answer: answers[q._id] || ''
       }));
 
-      const res = await submitVerification(claimId, formattedAnswers);
-      if (res.success) {
+      const res = await createClaim(item._id, formattedAnswers);
+      console.log(res);
+      if (res.success && res.data) {
         // Clear autosave
         sessionStorage.removeItem(autosaveKey);
-        navigate(`/claims/${claimId}`);
+        navigate(`/claims/${res.data._id}`);
       } else {
-        setSubmitError(res.message || 'Failed to submit verification.');
+        setSubmitError(res.message || 'Failed to submit claim.');
       }
     } catch (err: any) {
-      setSubmitError(err.response?.data?.message || 'Error submitting verification');
+      setSubmitError(err.response?.data?.message || 'Error submitting claim');
     } finally {
       setIsLoading(false);
     }
@@ -354,13 +339,13 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
       {/* Left (70%): Stepper form cards */}
       <Grid item xs={12} md={8}>
         <Stack spacing={4}>
-          
+
           {/* Horizontal Stepper */}
           <Box sx={{ width: '100%', mb: 2 }}>
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((label, index) => (
                 <Step key={label}>
-                  <StepLabel 
+                  <StepLabel
                     StepIconProps={{
                       style: { color: index <= activeStep ? '#B88A5A' : '#E7DDD1' }
                     }}
@@ -553,10 +538,10 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
                         '&:hover': { borderColor: 'primary.main' }
                       }}
                     >
-                      <input 
-                        type="file" 
-                        id="evidence-upload-file" 
-                        style={{ display: 'none' }} 
+                      <input
+                        type="file"
+                        id="evidence-upload-file"
+                        style={{ display: 'none' }}
                         onChange={handleFileSelect}
                       />
                       {isUploading ? (
@@ -576,7 +561,7 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
                         {evidenceImages.map((url, idx) => (
                           <Box key={idx} sx={{ position: 'relative', width: 70, height: 70, borderRadius: '8px', overflow: 'hidden', border: '1px solid #E7DDD1' }}>
                             <Box component="img" src={url} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <Box 
+                            <Box
                               onClick={(e) => { e.stopPropagation(); handleRemoveEvidence(idx); }}
                               sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(255,255,255,0.8)', borderRadius: '50%', cursor: 'pointer', px: 0.5 }}
                             >
@@ -739,7 +724,7 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
             >
               Back
             </Button>
-            
+
             {activeStep === 3 ? (
               <Button
                 variant="contained"
@@ -769,17 +754,17 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
       {/* Right (30%): Sticky summary cards panel */}
       <Grid item xs={12} md={4}>
         <Stack spacing={4} sx={{ position: { md: 'sticky' }, top: { md: 100 } }}>
-          
+
           {/* Sticky Summary Card */}
           <Card elevation={0} sx={{ borderRadius: '18px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8' }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
                 Claim Summary
               </Typography>
-              
+
               {/* Item Card Details */}
               <Box display="flex" gap={2} mb={3}>
-                <Box 
+                <Box
                   component="img"
                   src={item.images?.[0] || 'https://via.placeholder.com/150'}
                   sx={{ width: 64, height: 64, borderRadius: '8px', objectFit: 'cover' }}
@@ -791,10 +776,10 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                     Category: {item.category}
                   </Typography>
-                  <Chip 
-                    label={item.type.toUpperCase()} 
-                    size="small" 
-                    color={item.type === 'lost' ? 'error' : 'success'} 
+                  <Chip
+                    label={item.type.toUpperCase()}
+                    size="small"
+                    color={item.type === 'lost' ? 'error' : 'success'}
                     sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800 }}
                   />
                 </Box>
@@ -824,9 +809,9 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
                       {completionPercent}%
                     </Typography>
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={completionPercent} 
+                  <LinearProgress
+                    variant="determinate"
+                    value={completionPercent}
                     sx={{ height: 6, borderRadius: 3, bgcolor: '#E7DDD1' }}
                   />
                 </Box>

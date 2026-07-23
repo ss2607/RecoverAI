@@ -1,15 +1,22 @@
 const claimService = require('../services/claimService');
 const verificationService = require('../services/verificationService');
-const { apiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 const createClaim = async (req, res, next) => {
   try {
-    const { itemId } = req.body;
+    const { itemId, answers } = req.body;
+
     if (!itemId) {
-      return res.status(400).json(apiResponse(false, 'Item ID is required'));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, 'Item ID is required'));
     }
-    const claim = await claimService.createClaim(itemId, req.user._id);
-    return res.status(201).json(apiResponse(true, 'Claim created successfully', claim));
+
+    const claim = await claimService.createClaim(itemId, req.user.id, answers);
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, claim, 'Claim created successfully'));
   } catch (error) {
     next(error);
   }
@@ -17,9 +24,16 @@ const createClaim = async (req, res, next) => {
 
 const getClaims = async (req, res, next) => {
   try {
-    const query = (req.user.role === 'admin' || req.user.role === 'staff') ? {} : { claimant: req.user._id };
+    const query =
+      req.user.role === 'admin' || req.user.role === 'staff'
+        ? {}
+        : { claimant: req.user.id };
+
     const claims = await claimService.getClaims(query);
-    return res.status(200).json(apiResponse(true, 'Claims retrieved successfully', claims));
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, claims, 'Claims retrieved successfully'));
   } catch (error) {
     next(error);
   }
@@ -27,8 +41,15 @@ const getClaims = async (req, res, next) => {
 
 const getClaimById = async (req, res, next) => {
   try {
-    const claim = await claimService.getClaimById(req.params.id, req.user._id, req.user.role);
-    return res.status(200).json(apiResponse(true, 'Claim retrieved successfully', claim));
+    const claim = await claimService.getClaimById(
+      req.params.id,
+      req.user.id,
+      req.user.role
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, claim, 'Claim retrieved successfully'));
   } catch (error) {
     next(error);
   }
@@ -36,8 +57,15 @@ const getClaimById = async (req, res, next) => {
 
 const getClaimsByItemId = async (req, res, next) => {
   try {
-    const claims = await claimService.getClaimsByItemId(req.params.itemId, req.user._id, req.user.role);
-    return res.status(200).json(apiResponse(true, 'Item claims retrieved successfully', claims));
+    const claims = await claimService.getClaimsByItemId(
+      req.params.itemId,
+      req.user.id,
+      req.user.role
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, claims, 'Item claims retrieved successfully'));
   } catch (error) {
     next(error);
   }
@@ -46,11 +74,22 @@ const getClaimsByItemId = async (req, res, next) => {
 const submitVerification = async (req, res, next) => {
   try {
     const { answers } = req.body;
+
     if (!answers || !Array.isArray(answers)) {
-      return res.status(400).json(apiResponse(false, 'Answers must be an array'));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, 'Answers must be an array'));
     }
-    const claim = await claimService.submitVerification(req.params.id, req.user._id, answers);
-    return res.status(200).json(apiResponse(true, 'Verification submitted successfully', claim));
+
+    const claim = await claimService.submitVerification(
+      req.params.id,
+      req.user.id,
+      answers
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, claim, 'Verification submitted successfully'));
   } catch (error) {
     next(error);
   }
@@ -59,11 +98,30 @@ const submitVerification = async (req, res, next) => {
 const reviewClaim = async (req, res, next) => {
   try {
     const { status, reviewNotes } = req.body;
+
     if (!['approved', 'rejected', 'needs_info'].includes(status)) {
-      return res.status(400).json(apiResponse(false, 'Invalid status. Must be approved, rejected, or needs_info.'));
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            null,
+            'Invalid status. Must be approved, rejected, or needs_info.'
+          )
+        );
     }
-    const claim = await claimService.reviewClaim(req.params.id, req.user._id, req.user.role, status, reviewNotes);
-    return res.status(200).json(apiResponse(true, 'Claim reviewed successfully', claim));
+
+    const claim = await claimService.reviewClaim(
+      req.params.id,
+      req.user.id,
+      req.user.role,
+      status,
+      reviewNotes
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, claim, 'Claim reviewed successfully'));
   } catch (error) {
     next(error);
   }
@@ -71,8 +129,20 @@ const reviewClaim = async (req, res, next) => {
 
 const confirmReturn = async (req, res, next) => {
   try {
-    const claim = await claimService.confirmReturn(req.params.id, req.user._id);
-    return res.status(200).json(apiResponse(true, 'Item returned confirmation successful', claim));
+    const claim = await claimService.confirmReturn(
+      req.params.id,
+      req.user.id
+    );
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          claim,
+          'Item returned confirmation successful'
+        )
+      );
   } catch (error) {
     next(error);
   }
@@ -80,8 +150,19 @@ const confirmReturn = async (req, res, next) => {
 
 const getVerificationQuestions = async (req, res, next) => {
   try {
-    const questions = await verificationService.getQuestionsForItem(req.params.itemId);
-    return res.status(200).json(apiResponse(true, 'Questions retrieved successfully', questions));
+    const questions = await verificationService.getQuestionsForItem(
+      req.params.itemId
+    );
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          questions,
+          'Questions retrieved successfully'
+        )
+      );
   } catch (error) {
     next(error);
   }
@@ -95,5 +176,5 @@ module.exports = {
   submitVerification,
   reviewClaim,
   confirmReturn,
-  getVerificationQuestions
+  getVerificationQuestions,
 };
