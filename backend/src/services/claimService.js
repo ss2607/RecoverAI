@@ -86,9 +86,30 @@ const getClaims = async (query = {}) => {
     .populate('claimant', 'name email');
 };
 
+const getClaimsForUser = async (userId, role) => {
+  if (role === 'admin' || role === 'staff') {
+    return await getClaims();
+  }
+
+  const userItems = await Item.find({ reportedBy: userId }).select('_id');
+  const userItemIds = userItems.map(item => item._id);
+
+  return await Claim.find({
+    $or: [
+      { claimant: userId },
+      { item: { $in: userItemIds } }
+    ]
+  })
+  .populate('item')
+  .populate('claimant', 'name email');
+};
+
 const getClaimById = async (id, userId, userRole) => {
   const claim = await Claim.findById(id)
-    .populate('item')
+    .populate({
+      path: 'item',
+      populate: { path: 'reportedBy', select: 'name email' }
+    })
     .populate('claimant', 'name email')
     .populate('reviewedBy', 'name');
 
@@ -96,11 +117,14 @@ const getClaimById = async (id, userId, userRole) => {
     throw new ApiError(404, 'Claim not found');
   }
 
-  if (
-    claim.claimant._id.toString() !== userId.toString() &&
-    userRole !== 'admin' &&
-    userRole !== 'staff'
-  ) {
+  const claimantId = claim.claimant?._id || claim.claimant;
+  const itemOwnerId = claim.item?.reportedBy?._id || claim.item?.reportedBy;
+
+  const isClaimant = claimantId && claimantId.toString() === userId.toString();
+  const isOwner = itemOwnerId && itemOwnerId.toString() === userId.toString();
+  const isAdmin = userRole === 'admin' || userRole === 'staff';
+
+  if (!isClaimant && !isOwner && !isAdmin) {
     throw new ApiError(
       403,
       'Not authorized to view this claim'
@@ -421,5 +445,6 @@ module.exports = {
   getClaimsByItemId,
   submitVerification,
   reviewClaim,
-  confirmReturn
+  confirmReturn,
+  getClaimsForUser
 };

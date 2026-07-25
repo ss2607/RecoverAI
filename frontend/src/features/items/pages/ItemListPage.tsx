@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { getItems } from '../services/itemService';
 import type { Item } from '../services/itemService';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Search as SearchIcon,
   LocationOnOutlined as LocationOnOutlinedIcon,
@@ -28,11 +28,24 @@ import {
 } from '@mui/icons-material';
 
 export const ItemListPage = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const typeParam = queryParams.get('type');
+  const statusParam = queryParams.get('status');
+
+  const initialTab = typeParam === 'lost' ? 1 : (typeParam === 'found' ? 2 : 0);
+
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(initialTab);
+
+  // Sync tab state if query parameter changes
+  useEffect(() => {
+    const currentType = new URLSearchParams(location.search).get('type');
+    setTabValue(currentType === 'lost' ? 1 : (currentType === 'found' ? 2 : 0));
+  }, [location.search]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -63,7 +76,8 @@ export const ItemListPage = () => {
                           location.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = tabValue === 0 ? true : (tabValue === 1 ? item.type === 'lost' : item.type === 'found');
-    return matchesSearch && matchesTab;
+    const matchesStatus = !statusParam || item.status === statusParam;
+    return matchesSearch && matchesTab && matchesStatus;
   });
 
   if (loading) return (

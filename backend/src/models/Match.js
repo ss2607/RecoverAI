@@ -27,4 +27,6 @@ const matchSchema = new mongoose.Schema({
   timestamps: true
 });
 
+matchSchema.index({ lostItem: 1, foundItem: 1 }, { unique: true });
+
 module.exports = mongoose.model('Match', matchSchema);

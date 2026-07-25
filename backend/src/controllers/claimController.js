@@ -24,12 +24,7 @@ const createClaim = async (req, res, next) => {
 
 const getClaims = async (req, res, next) => {
   try {
-    const query =
-      req.user.role === 'admin' || req.user.role === 'staff'
-        ? {}
-        : { claimant: req.user.id };
-
-    const claims = await claimService.getClaims(query);
+    const claims = await claimService.getClaimsForUser(req.user.id, req.user.role);
 
     return res
       .status(200)

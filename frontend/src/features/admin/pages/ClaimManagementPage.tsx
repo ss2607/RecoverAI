@@ -32,11 +32,13 @@ import {
   Skeleton,
   useTheme,
   useMediaQuery,
-  Alert
+  Alert,
+  Paper
 } from '@mui/material';
 import { adminService } from '../services/adminService';
 import { AuthContext } from '../../auth/context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { getClaims as getUserClaims } from '../../claims/services/claimService';
 import { 
   Search as SearchIcon,
   VisibilityOutlined as ViewIcon,
@@ -114,14 +116,18 @@ export const ReusableTable = ({
 };
 
 export const ClaimManagementPage = () => {
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const statusParam = queryParams.get('status');
+
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(statusParam || 'all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
@@ -142,11 +148,17 @@ export const ClaimManagementPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
+    const currentStatus = new URLSearchParams(location.search).get('status');
+    setStatusFilter(currentStatus || 'all');
+  }, [location.search]);
+
+  useEffect(() => {
     const fetchClaims = async () => {
       if (!token) return;
       try {
         setLoading(true);
-        const data = await adminService.getClaims(token);
+        const isAdmin = user?.role === 'admin' || user?.role === 'staff';
+        const data = isAdmin ? await adminService.getClaims(token) : await getUserClaims();
         // Backend compatibility checks
         if (Array.isArray(data)) {
           setClaims(data);
@@ -220,7 +232,20 @@ export const ClaimManagementPage = () => {
   };
 
   // Filter and Search logic
-  const filteredClaims = claims.filter(c => {
+  const isAdmin = user?.role === 'admin' || user?.role === 'staff';
+  const claimsToProcess = isAdmin
+    ? claims
+    : claims.filter(c => {
+        const isOwner = typeof c.item?.reportedBy === 'object'
+          ? c.item?.reportedBy?._id === user?.id
+          : c.item?.reportedBy === user?.id;
+        const isClaimant = typeof c.claimant === 'object'
+          ? c.claimant?._id === user?.id
+          : c.claimant === user?.id;
+        return isOwner && !isClaimant;
+      });
+
+  const filteredClaims = claimsToProcess.filter(c => {
     const matchesSearch = 
       (c._id?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (c.item?.title?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -307,6 +332,106 @@ export const ClaimManagementPage = () => {
           ))}
         </Grid>
         <Skeleton variant="rectangular" height={400} sx={{ borderRadius: '18px' }} />
+      </Container>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 6 }} className="fade-in">
+        {/* Page Title */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em' }}>
+            Pending Claims
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Review ownership claims submitted on your reported items.
+          </Typography>
+        </Box>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 4, borderRadius: '12px' }}>
+            {error}
+          </Alert>
+        )}
+
+        <Paper elevation={0} sx={{ borderRadius: '18px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8', overflow: 'hidden' }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell style={{ fontWeight: 700, backgroundColor: '#FFFCF8', color: '#7B5B3D' }}>Claimant</TableCell>
+                  <TableCell style={{ fontWeight: 700, backgroundColor: '#FFFCF8', color: '#7B5B3D' }}>Item</TableCell>
+                  <TableCell style={{ fontWeight: 700, backgroundColor: '#FFFCF8', color: '#7B5B3D' }}>Submitted</TableCell>
+                  <TableCell style={{ fontWeight: 700, backgroundColor: '#FFFCF8', color: '#7B5B3D' }}>AI Score</TableCell>
+                  <TableCell style={{ fontWeight: 700, backgroundColor: '#FFFCF8', color: '#7B5B3D' }}>Status</TableCell>
+                  <TableCell style={{ fontWeight: 700, backgroundColor: '#FFFCF8', color: '#7B5B3D' }} align="right">Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sortedClaims.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No claims logs found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedClaims.map((claim) => (
+                    <TableRow key={claim._id} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        {claim.claimant?.name || 'Unknown Claimant'}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {claim.item?.title || 'Unknown Item'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {claim.item?.category}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(claim.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={`${claim.verificationScore || 0}%`}
+                          size="small"
+                          color={(claim.verificationScore || 0) >= 80 ? "success" : (claim.verificationScore || 0) >= 60 ? "warning" : "default"}
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={claim.status.replace('_', ' ').toUpperCase()}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          component={Link}
+                          to={`/claims/${claim._id}`}
+                          variant="contained"
+                          size="small"
+                          sx={{ borderRadius: '8px', px: 3 }}
+                        >
+                          Review
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Container>
     );
   }

@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 class SocketService {
   private socket: Socket | null = null;
   private currentToken: string | null = null;
+  private listeners: { event: string; callback: (...args: any[]) => void }[] = [];
 
   connect(token: string) {
     if (!token) {
@@ -23,8 +24,8 @@ class SocketService {
 
     this.currentToken = token;
 
-    // Connect to server (using relative path since development uses proxy or same origin)
-    const backendUrl = window.location.origin;
+    // Use environment configuration or fallback to localhost
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5010';
 
     this.socket = io(backendUrl, {
       auth: { token },
@@ -32,6 +33,11 @@ class SocketService {
       reconnection: true,
       reconnectionAttempts: 5, // Avoid infinite reconnection loops on bad tokens
       reconnectionDelay: 3000
+    });
+
+    // Re-register all queued listeners on the new socket
+    this.listeners.forEach(({ event, callback }) => {
+      this.socket?.on(event, callback);
     });
 
     this.socket.on('connect', () => {
@@ -61,12 +67,16 @@ class SocketService {
   }
 
   on(event: string, callback: (...args: any[]) => void) {
+    this.listeners.push({ event, callback });
     if (this.socket) {
       this.socket.on(event, callback);
     }
   }
 
   off(event: string, callback?: (...args: any[]) => void) {
+    this.listeners = this.listeners.filter(
+      l => l.event !== event || (callback && l.callback !== callback)
+    );
     if (this.socket) {
       this.socket.off(event, callback);
     }

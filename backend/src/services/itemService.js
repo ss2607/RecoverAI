@@ -71,6 +71,15 @@ const deleteItem = async (id, userId, userRole) => {
     throw new ApiError(403, 'Not authorized to delete this item');
   }
 
+  // Delete all associated match documents to prevent dangling references
+  const Match = require('../models/Match');
+  await Match.deleteMany({
+    $or: [
+      { lostItem: id },
+      { foundItem: id }
+    ]
+  });
+
   await item.deleteOne();
   return item;
 };

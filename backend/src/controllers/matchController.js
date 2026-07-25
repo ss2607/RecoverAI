@@ -1,10 +1,10 @@
 const matchingService = require('../services/matchingService');
-const { apiResponse } = require('../utils/apiResponse');
+const ApiResponse = require('../utils/apiResponse');
 
 const getMatches = async (req, res, next) => {
   try {
-    const matches = await matchingService.getMatches();
-    return res.status(200).json(apiResponse(true, 'Matches retrieved successfully', matches));
+    const matches = await matchingService.getMatchesForUser(req.user.id, req.user.role);
+    return res.status(200).json(new ApiResponse(200, matches, 'Matches retrieved successfully'));
   } catch (error) {
     next(error);
   }
@@ -13,7 +13,7 @@ const getMatches = async (req, res, next) => {
 const getMatchById = async (req, res, next) => {
   try {
     const match = await matchingService.getMatchById(req.params.id);
-    return res.status(200).json(apiResponse(true, 'Match retrieved successfully', match));
+    return res.status(200).json(new ApiResponse(200, match, 'Match retrieved successfully'));
   } catch (error) {
     next(error);
   }
@@ -22,7 +22,7 @@ const getMatchById = async (req, res, next) => {
 const getMatchesByItemId = async (req, res, next) => {
   try {
     const matches = await matchingService.getMatchesByItemId(req.params.itemId);
-    return res.status(200).json(apiResponse(true, 'Item matches retrieved successfully', matches));
+    return res.status(200).json(new ApiResponse(200, matches, 'Item matches retrieved successfully'));
   } catch (error) {
     next(error);
   }
@@ -31,10 +31,10 @@ const getMatchesByItemId = async (req, res, next) => {
 const deleteMatch = async (req, res, next) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json(apiResponse(false, 'Only admins can delete matches'));
+      return res.status(403).json(new ApiResponse(403, null, 'Only admins can delete matches'));
     }
     const match = await matchingService.deleteMatch(req.params.id);
-    return res.status(200).json(apiResponse(true, 'Match deleted successfully', match));
+    return res.status(200).json(new ApiResponse(200, match, 'Match deleted successfully'));
   } catch (error) {
     next(error);
   }

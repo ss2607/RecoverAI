@@ -90,10 +90,22 @@ export const UserDashboardPage = () => {
 
     socketService.on('stats_updated', handleSocketUpdate);
     socketService.on('new_match', handleSocketUpdate);
+    socketService.on('notification_created', handleSocketUpdate);
+    socketService.on('new_claim', handleSocketUpdate);
+    socketService.on('claim_approved', handleSocketUpdate);
+    socketService.on('claim_rejected', handleSocketUpdate);
+    socketService.on('needs_info', handleSocketUpdate);
+    socketService.on('item_returned', handleSocketUpdate);
 
     return () => {
       socketService.off('stats_updated', handleSocketUpdate);
       socketService.off('new_match', handleSocketUpdate);
+      socketService.off('notification_created', handleSocketUpdate);
+      socketService.off('new_claim', handleSocketUpdate);
+      socketService.off('claim_approved', handleSocketUpdate);
+      socketService.off('claim_rejected', handleSocketUpdate);
+      socketService.off('needs_info', handleSocketUpdate);
+      socketService.off('item_returned', handleSocketUpdate);
     };
   }, []);
 
@@ -131,6 +143,9 @@ export const UserDashboardPage = () => {
   // Item exchange stats
   const returnedCount = userItems.filter(i => (i.status as string) === 'returned').length;
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'staff';
+  const claimsPath = isAdmin ? '/admin/claims' : '/claims';
+
   const stats = [
     { 
       label: 'Lost Reports', 
@@ -138,7 +153,8 @@ export const UserDashboardPage = () => {
       desc: 'Active lost logs', 
       trend: lostCount > 0 ? `+${lostCount} total` : 'Stable', 
       icon: <Inventory2OutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#B24C4C' 
+      color: '#B24C4C',
+      path: '/items?type=lost'
     },
     { 
       label: 'Found Reports', 
@@ -146,7 +162,8 @@ export const UserDashboardPage = () => {
       desc: 'Community matches', 
       trend: foundCount > 0 ? `+${foundCount} total` : 'Stable', 
       icon: <ReportProblemOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#4F8A5B' 
+      color: '#4F8A5B',
+      path: '/items?type=found'
     },
     { 
       label: 'Pending Claims', 
@@ -154,7 +171,8 @@ export const UserDashboardPage = () => {
       desc: 'Claims on your items', 
       trend: pendingOwnerClaimsCount > 0 ? `+${pendingOwnerClaimsCount} pending` : 'None', 
       icon: <AutoAwesomeOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#B88A5A' 
+      color: '#B88A5A',
+      path: `${claimsPath}?status=under_review`
     },
     { 
       label: 'My Claims', 
@@ -162,7 +180,8 @@ export const UserDashboardPage = () => {
       desc: 'Claims submitted by you', 
       trend: myClaimsCount > 0 ? `+${myClaimsCount} total` : 'None', 
       icon: <AssignmentIcon sx={{ fontSize: 22 }} />, 
-      color: '#2E6CB5' 
+      color: '#2E6CB5',
+      path: claimsPath
     },
     { 
       label: 'Under Review', 
@@ -170,7 +189,8 @@ export const UserDashboardPage = () => {
       desc: 'Your active claims', 
       trend: claimantUnderReviewCount > 0 ? `${claimantUnderReviewCount} under review` : 'None', 
       icon: <AutoAwesomeOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#D59B3A' 
+      color: '#D59B3A',
+      path: `${claimsPath}?status=under_review`
     },
     { 
       label: 'Approved', 
@@ -178,7 +198,8 @@ export const UserDashboardPage = () => {
       desc: 'Approved claims', 
       trend: claimantApprovedCount > 0 ? `+${claimantApprovedCount} approved` : 'None', 
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#4F8A5B' 
+      color: '#4F8A5B',
+      path: `${claimsPath}?status=approved`
     },
     { 
       label: 'Rejected', 
@@ -186,7 +207,8 @@ export const UserDashboardPage = () => {
       desc: 'Rejected claims', 
       trend: claimantRejectedCount > 0 ? `${claimantRejectedCount} rejected` : 'None', 
       icon: <ReportProblemOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#B24C4C' 
+      color: '#B24C4C',
+      path: `${claimsPath}?status=rejected`
     },
     { 
       label: 'Returned Items', 
@@ -194,7 +216,8 @@ export const UserDashboardPage = () => {
       desc: 'Completed returns', 
       trend: returnedCount > 0 ? `${returnedCount} returned` : 'None', 
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22 }} />, 
-      color: '#4F8A5B' 
+      color: '#4F8A5B',
+      path: '/items?status=returned'
     }
   ];
 
@@ -369,8 +392,12 @@ export const UserDashboardPage = () => {
         {stats.map((stat, idx) => (
           <Grid item xs={12} sm={6} md={3} key={idx}>
             <Card 
+              component={Link}
+              to={stat.path || '#'}
               elevation={0}
               sx={{ 
+                display: 'block',
+                textDecoration: 'none',
                 height: '100%',
                 borderRadius: '18px',
                 border: '1px solid #E7DDD1',
@@ -378,7 +405,8 @@ export const UserDashboardPage = () => {
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: '0 8px 30px rgba(123, 91, 61, 0.08)',
-                  borderColor: 'primary.main'
+                  borderColor: 'primary.main',
+                  cursor: 'pointer'
                 }
               }}
             >
@@ -411,7 +439,7 @@ export const UserDashboardPage = () => {
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>
                   {stat.label}
                 </Typography>
-                <Typography variant="h2" sx={{ mt: 0.5, mb: 0.5, fontWeight: 800 }}>
+                <Typography variant="h2" sx={{ mt: 0.5, mb: 0.5, fontWeight: 800, color: 'text.primary' }}>
                   {stat.value}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>

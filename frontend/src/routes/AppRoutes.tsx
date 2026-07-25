@@ -67,6 +67,7 @@ export const AppRoutes: React.FC = () => {
               <CreateClaimPage />
             </ProtectedRoute>
           } />
+          <Route path="/claims" element={<ProtectedRoute><ClaimManagementPage /></ProtectedRoute>} />
           <Route path="/claims/:id" element={<ProtectedRoute><ClaimReviewPage /></ProtectedRoute>} />
           
             <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />

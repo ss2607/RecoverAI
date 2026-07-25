@@ -29,7 +29,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (token) {
         try {
           const userData = await authService.getMe(token);
-          setUser(userData);
+          const normalizedUser = {
+            id: userData._id || userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role
+          };
+          setUser(normalizedUser);
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Failed to fetch user', error);

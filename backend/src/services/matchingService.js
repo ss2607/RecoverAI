@@ -100,34 +100,88 @@ const calculateMatchScore = (itemA, itemB) => {
   return { score: Math.round(score), matchedFields };
 };
 
+const cleanDuplicateMatches = async () => {
+  try {
+    const matches = await Match.find();
+    const seen = new Set();
+    for (const match of matches) {
+      if (!match.lostItem || !match.foundItem) {
+        await Match.findByIdAndDelete(match._id);
+        continue;
+      }
+      
+      const lostItemExists = await Item.findById(match.lostItem);
+      const foundItemExists = await Item.findById(match.foundItem);
+
+      if (!lostItemExists || !foundItemExists) {
+        await Match.findByIdAndDelete(match._id);
+        continue;
+      }
+
+      if (match.lostItem.toString() === match.foundItem.toString()) {
+        await Match.findByIdAndDelete(match._id);
+        continue;
+      }
+
+      const key = `${match.lostItem.toString()}_${match.foundItem.toString()}`;
+      const reverseKey = `${match.foundItem.toString()}_${match.lostItem.toString()}`;
+
+      if (seen.has(key) || seen.has(reverseKey)) {
+        await Match.findByIdAndDelete(match._id);
+      } else {
+        seen.add(key);
+      }
+    }
+  } catch (err) {
+    console.error('Error cleaning duplicate matches:', err);
+  }
+};
+
+// Run startup database self-healing migration
+setTimeout(cleanDuplicateMatches, 2000);
+
 const runMatchingForItem = async (newItem) => {
   const targetType = newItem.type === 'lost' ? 'found' : 'lost';
   const potentialMatches = await Item.find({ type: targetType, status: 'open' });
 
   for (const item of potentialMatches) {
+    if (newItem._id.toString() === item._id.toString()) continue;
+
     const { score, matchedFields } = calculateMatchScore(newItem, item);
     
     if (score >= 60) {
       const lostItem = newItem.type === 'lost' ? newItem._id : item._id;
       const foundItem = newItem.type === 'found' ? newItem._id : item._id;
 
-      const existingMatch = await Match.findOne({ lostItem, foundItem });
-      if (!existingMatch) {
-        await Match.create({
-          lostItem,
-          foundItem,
-          confidenceScore: score,
-          matchedFields,
-          status: 'pending'
-        });
+      const existingMatch = await Match.findOne({
+        $or: [
+          { lostItem, foundItem },
+          { lostItem: foundItem, foundItem: lostItem }
+        ]
+      });
 
-        // Emit Socket.IO Events
+      if (!existingMatch) {
         try {
-          const { emitToUser } = require('../config/socket');
-          emitToUser(newItem.reportedBy.toString(), 'new_match', { item: newItem, score });
-          emitToUser(item.reportedBy.toString(), 'new_match', { item, score });
-        } catch (err) {
-          console.error('Error emitting new_match socket events:', err);
+          await Match.create({
+            lostItem,
+            foundItem,
+            confidenceScore: score,
+            matchedFields,
+            status: 'pending'
+          });
+
+          // Emit Socket.IO Events
+          try {
+            const { emitToUser } = require('../config/socket');
+            emitToUser(newItem.reportedBy.toString(), 'new_match', { item: newItem, score });
+            emitToUser(item.reportedBy.toString(), 'new_match', { item, score });
+          } catch (err) {
+            console.error('Error emitting new_match socket events:', err);
+          }
+        } catch (dbErr) {
+          if (dbErr.code !== 11000) {
+            console.error('Error saving match:', dbErr);
+          }
         }
       }
     }
@@ -152,6 +206,8 @@ const getItemMatches = async (itemId) => {
   const matches = [];
 
   for (const candidate of candidates) {
+    if (currentItem._id.toString() === candidate._id.toString()) continue;
+
     let score = 0;
     const matchedFieldsList = [];
     const matchingTags = [];
@@ -212,11 +268,32 @@ const getItemMatches = async (itemId) => {
   return matches;
 };
 
+const getMatchesForUser = async (userId, role) => {
+  if (role === 'admin' || role === 'staff') {
+    return await getMatches();
+  }
+
+  const userItems = await Item.find({ reportedBy: userId }).select('_id');
+  const userItemIds = userItems.map(item => item._id);
+
+  return await Match.find({
+    $or: [
+      { lostItem: { $in: userItemIds } },
+      { foundItem: { $in: userItemIds } }
+    ]
+  })
+  .populate('lostItem')
+  .populate('foundItem')
+  .sort({ confidenceScore: -1 });
+};
+
 module.exports = {
   getMatches,
   getMatchById,
   getMatchesByItemId,
   deleteMatch,
   runMatchingForItem,
-  getItemMatches
+  getItemMatches,
+  cleanDuplicateMatches,
+  getMatchesForUser
 };
