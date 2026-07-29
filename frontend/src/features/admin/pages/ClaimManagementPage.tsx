@@ -233,17 +233,26 @@ export const ClaimManagementPage = () => {
 
   // Filter and Search logic
   const isAdmin = user?.role === 'admin' || user?.role === 'staff';
+  const isOwnerReviewMode = location.pathname === '/claims/review';
+
   const claimsToProcess = isAdmin
     ? claims
-    : claims.filter(c => {
-        const isOwner = typeof c.item?.reportedBy === 'object'
-          ? c.item?.reportedBy?._id === user?.id
-          : c.item?.reportedBy === user?.id;
-        const isClaimant = typeof c.claimant === 'object'
-          ? c.claimant?._id === user?.id
-          : c.claimant === user?.id;
-        return isOwner && !isClaimant;
-      });
+    : isOwnerReviewMode
+      ? claims.filter(c => {
+          const isOwner = typeof c.item?.reportedBy === 'object'
+            ? c.item?.reportedBy?._id === user?.id
+            : c.item?.reportedBy === user?.id;
+          const isClaimant = typeof c.claimant === 'object'
+            ? c.claimant?._id === user?.id
+            : c.claimant === user?.id;
+          return isOwner && !isClaimant;
+        })
+      : claims.filter(c => {
+          const isClaimant = typeof c.claimant === 'object'
+            ? c.claimant?._id === user?.id
+            : c.claimant === user?.id;
+          return isClaimant;
+        });
 
   const filteredClaims = claimsToProcess.filter(c => {
     const matchesSearch = 
@@ -337,15 +346,36 @@ export const ClaimManagementPage = () => {
   }
 
   if (!isAdmin) {
+    const getMyClaimsHeader = () => {
+      switch (statusFilter) {
+        case 'under_review':
+          return { title: 'Claims Under Review', subtitle: 'Track claims you have submitted that are currently under review.' };
+        case 'approved':
+          return { title: 'Approved Claims', subtitle: 'Track claims you have submitted that have been approved.' };
+        case 'rejected':
+          return { title: 'Rejected Claims', subtitle: 'Track claims you have submitted that were rejected.' };
+        case 'completed':
+          return { title: 'Completed Claims', subtitle: 'Track claims you have submitted that have been returned successfully.' };
+        default:
+          return { title: 'My Claims', subtitle: 'Track claims you have submitted for lost or found items.' };
+      }
+    };
+
+    const headerInfo = isOwnerReviewMode
+      ? { title: 'Pending Claims', subtitle: 'Review ownership claims submitted on your reported items.' }
+      : getMyClaimsHeader();
+
+    const actionButtonText = isOwnerReviewMode ? 'Review' : 'View Details';
+
     return (
       <Container maxWidth="lg" sx={{ py: 6 }} className="fade-in">
         {/* Page Title */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em' }}>
-            Pending Claims
+            {headerInfo.title}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Review ownership claims submitted on your reported items.
+            {headerInfo.subtitle}
           </Typography>
         </Box>
 
@@ -422,7 +452,7 @@ export const ClaimManagementPage = () => {
                           size="small"
                           sx={{ borderRadius: '8px', px: 3 }}
                         >
-                          Review
+                          {actionButtonText}
                         </Button>
                       </TableCell>
                     </TableRow>

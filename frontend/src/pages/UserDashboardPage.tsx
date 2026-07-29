@@ -172,7 +172,7 @@ export const UserDashboardPage = () => {
       trend: pendingOwnerClaimsCount > 0 ? `+${pendingOwnerClaimsCount} pending` : 'None', 
       icon: <AutoAwesomeOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#B88A5A',
-      path: `${claimsPath}?status=under_review`
+      path: isAdmin ? '/admin/claims?status=under_review' : '/claims/review'
     },
     { 
       label: 'My Claims', 
@@ -217,7 +217,7 @@ export const UserDashboardPage = () => {
       trend: returnedCount > 0 ? `${returnedCount} returned` : 'None', 
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#4F8A5B',
-      path: '/items?status=returned'
+      path: `${claimsPath}?status=completed`
     }
   ];
 
