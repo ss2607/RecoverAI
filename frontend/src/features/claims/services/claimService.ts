@@ -30,6 +30,8 @@ export interface Claim {
     name: string;
   };
   reviewNotes?: string;
+  ownerConfirmedReturn: boolean;
+  claimantConfirmedReturn: boolean;
   createdAt: string;
   updatedAt: string;
 }

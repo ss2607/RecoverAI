@@ -37,14 +37,44 @@ const initSocket = (server) => {
 
   io.on('connection', (socket) => {
     const userId = socket.user?.id;
+    console.log(`[SERVER] Client connected. Socket ID: ${socket.id}, User ID: ${userId}`);
     if (userId) {
       const roomName = `user:${userId}`;
       socket.join(roomName);
-      console.log(`Socket connection: User ${userId} joined room ${roomName} (Socket ID: ${socket.id})`);
+      console.log(`[SERVER] User ${userId} joined room ${roomName} (Socket ID: ${socket.id})`);
     }
 
+    socket.on('join_conversation', ({ conversationId }) => {
+      const roomName = `conversation:${conversationId}`;
+      socket.join(roomName);
+      const roomMembers = io.sockets.adapter.rooms.get(roomName);
+      console.log(`[SERVER] Client ${socket.id} (User ${userId}) joined room ${roomName}. Current room members:`, roomMembers ? Array.from(roomMembers) : []);
+    });
+
+    socket.on('send_message', ({ conversationId, message }) => {
+      const roomName = `conversation:${conversationId}`;
+      console.log(`[SERVER] send_message received for room ${roomName} from ${socket.id}. Message text: "${message.text}"`);
+      socket.to(roomName).emit('receive_message', { conversationId, message });
+      console.log(`[SERVER] receive_message emitted to room ${roomName} (except sender)`);
+    });
+
+    socket.on('typing', ({ conversationId, isTyping }) => {
+      const roomName = `conversation:${conversationId}`;
+      socket.to(roomName).emit('typing', { conversationId, userId, isTyping });
+    });
+
+    socket.on('message_read', ({ conversationId, messageId }) => {
+      const roomName = `conversation:${conversationId}`;
+      socket.to(roomName).emit('message_read', { conversationId, messageId });
+    });
+
+    socket.on('meeting_updated', ({ conversationId, meetingLocation, meetingTime, meetingStatus }) => {
+      const roomName = `conversation:${conversationId}`;
+      socket.to(roomName).emit('meeting_updated', { conversationId, meetingLocation, meetingTime, meetingStatus });
+    });
+
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${socket.id} (User: ${userId})`);
+      console.log(`[SERVER] Client disconnected: ${socket.id} (User: ${userId})`);
     });
   });
 

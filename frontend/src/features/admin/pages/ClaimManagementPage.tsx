@@ -37,8 +37,9 @@ import {
 } from '@mui/material';
 import { adminService } from '../services/adminService';
 import { AuthContext } from '../../auth/context/AuthContext';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getClaims as getUserClaims } from '../../claims/services/claimService';
+import { getOrCreateConversation } from '../../claims/services/chatService';
 import { 
   Search as SearchIcon,
   VisibilityOutlined as ViewIcon,
@@ -139,6 +140,22 @@ export const ClaimManagementPage = () => {
   const [selectedClaims, setSelectedClaims] = useState<string[]>([]);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Chat Redirect State
+  const [redirectingClaimId, setRedirectingClaimId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleChatRedirect = async (claimId: string) => {
+    try {
+      setRedirectingClaimId(claimId);
+      const conv = await getOrCreateConversation(claimId);
+      navigate(`/conversations/${conv._id}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRedirectingClaimId(null);
+    }
+  };
 
   // Confirmation dialogs
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -245,7 +262,10 @@ export const ClaimManagementPage = () => {
           const isClaimant = typeof c.claimant === 'object'
             ? c.claimant?._id === user?.id
             : c.claimant === user?.id;
-          return isOwner && !isClaimant;
+          const isStatusMatch = statusFilter !== 'all'
+            ? c.status === statusFilter
+            : (c.status === 'pending' || c.status === 'under_review');
+          return isOwner && !isClaimant && isStatusMatch;
         })
       : claims.filter(c => {
           const isClaimant = typeof c.claimant === 'object'
@@ -365,7 +385,7 @@ export const ClaimManagementPage = () => {
       ? { title: 'Pending Claims', subtitle: 'Review ownership claims submitted on your reported items.' }
       : getMyClaimsHeader();
 
-    const actionButtonText = isOwnerReviewMode ? 'Review' : 'View Details';
+
 
     return (
       <Container maxWidth="lg" sx={{ py: 6 }} className="fade-in">
@@ -445,15 +465,47 @@ export const ClaimManagementPage = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Button
-                          component={Link}
-                          to={`/claims/${claim._id}`}
-                          variant="contained"
-                          size="small"
-                          sx={{ borderRadius: '8px', px: 3 }}
-                        >
-                          {actionButtonText}
-                        </Button>
+                        {claim.status === 'approved' ? (
+                          <Button
+                            onClick={() => handleChatRedirect(claim._id)}
+                            variant="contained"
+                            size="small"
+                            disabled={redirectingClaimId === claim._id}
+                            sx={{ borderRadius: '8px', px: 3, bgcolor: '#4F8A5B', '&:hover': { bgcolor: '#3E6F46' } }}
+                          >
+                            {redirectingClaimId === claim._id ? 'Opening...' : '💬 Open Chat'}
+                          </Button>
+                        ) : claim.status === 'completed' ? (
+                          <Button
+                            onClick={() => handleChatRedirect(claim._id)}
+                            variant="contained"
+                            size="small"
+                            disabled={redirectingClaimId === claim._id}
+                            sx={{ borderRadius: '8px', px: 3, bgcolor: '#4F8A5B', '&:hover': { bgcolor: '#3E6F46' } }}
+                          >
+                            {redirectingClaimId === claim._id ? 'Opening...' : '💬 View Chat'}
+                          </Button>
+                        ) : claim.status === 'rejected' ? (
+                          <Button
+                            component={Link}
+                            to={`/claims/${claim._id}`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ borderRadius: '8px', px: 3 }}
+                          >
+                            View Details
+                          </Button>
+                        ) : (
+                          <Button
+                            component={Link}
+                            to={`/claims/${claim._id}`}
+                            variant="contained"
+                            size="small"
+                            sx={{ borderRadius: '8px', px: 3 }}
+                          >
+                            Review
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

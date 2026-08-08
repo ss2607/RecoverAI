@@ -1,11 +1,12 @@
 const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
 
-exports.createNotification = async (userId, title, message, type = 'info') => {
+exports.createNotification = async (userId, message, type = 'info', relatedId = null) => {
   const notification = new Notification({
     user: userId,
-    title,
     message,
-    type
+    type,
+    relatedId: relatedId || new mongoose.Types.ObjectId()
   });
   return notification.save();
 };

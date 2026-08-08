@@ -14,6 +14,8 @@ import { AuthProvider, AuthContext } from '../features/auth/context/AuthContext'
 import { DashboardPage as AdminDashboardPage } from '../features/admin/pages/DashboardPage';
 import { UserManagementPage } from '../features/admin/pages/UserManagementPage';
 import { ClaimManagementPage } from '../features/admin/pages/ClaimManagementPage';
+import { ConversationsPage } from '../features/claims/pages/ConversationsPage';
+import { ChatPage } from '../features/claims/pages/ChatPage';
 
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { EditProfilePage } from '../features/profile/pages/EditProfilePage';
@@ -70,6 +72,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="/claims" element={<ProtectedRoute><ClaimManagementPage /></ProtectedRoute>} />
           <Route path="/claims/review" element={<ProtectedRoute><ClaimManagementPage /></ProtectedRoute>} />
           <Route path="/claims/:id" element={<ProtectedRoute><ClaimReviewPage /></ProtectedRoute>} />
+          
+          <Route path="/conversations" element={<ProtectedRoute><ConversationsPage /></ProtectedRoute>} />
+          <Route path="/conversations/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           
             <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />

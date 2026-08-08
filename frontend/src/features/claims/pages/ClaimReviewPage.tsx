@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../../auth/context/AuthContext';
 import { 
   Container, 
@@ -23,10 +23,10 @@ import {
   DialogContentText,
   DialogActions
 } from '@mui/material';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getClaimById, reviewClaim, confirmReturn } from '../services/claimService';
 import type { Claim } from '../services/claimService';
-import { socketService } from '../../../services/socketService';
+import { getOrCreateConversation } from '../services/chatService';
 import { 
   ArrowBack as ArrowBackIcon,
   LocationOnOutlined as LocationOnOutlinedIcon,
@@ -38,7 +38,8 @@ import {
   PersonOutline as PersonIcon,
   ImageOutlined as ImageIcon,
   HistoryOutlined as HistoryIcon,
-  ShieldOutlined as ShieldIcon
+  ShieldOutlined as ShieldIcon,
+  ChatBubbleOutline as ChatIcon
 } from '@mui/icons-material';
 
 export const ClaimReviewPage = () => {
@@ -57,13 +58,13 @@ export const ClaimReviewPage = () => {
   // Evidence Gallery Image Zoom
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const fetchClaim = async (showLoadingSkeleton = true) => {
+    const fetchClaim = async () => {
       if (!id) return;
       try {
-        if (showLoadingSkeleton) {
-          setLoading(true);
-        }
+        setLoading(true);
         const res = await getClaimById(id);
         if (res.success) {
           setClaim(res.data);
@@ -74,33 +75,25 @@ export const ClaimReviewPage = () => {
       } catch (err) {
         setError('Error fetching claim details');
       } finally {
-        if (showLoadingSkeleton) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    fetchClaim(true);
-
-    const handleSocketUpdate = (updatedClaim: any) => {
-      // If the event corresponds to this claim, update it in the background
-      if (updatedClaim && (updatedClaim._id === id || updatedClaim.id === id)) {
-        fetchClaim(false);
-      }
-    };
-
-    socketService.on('claim_approved', handleSocketUpdate);
-    socketService.on('claim_rejected', handleSocketUpdate);
-    socketService.on('claim_needs_info', handleSocketUpdate);
-    socketService.on('item_returned', handleSocketUpdate);
-
-    return () => {
-      socketService.off('claim_approved', handleSocketUpdate);
-      socketService.off('claim_rejected', handleSocketUpdate);
-      socketService.off('claim_needs_info', handleSocketUpdate);
-      socketService.off('item_returned', handleSocketUpdate);
-    };
+    fetchClaim();
   }, [id]);
+
+  const handleOpenChat = async () => {
+    if (!id) return;
+    try {
+      setSubmitting(true);
+      const conv = await getOrCreateConversation(id);
+      navigate(`/conversations/${conv._id}`);
+    } catch (err) {
+      console.error('Error initiating chat:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleOpenConfirm = (type: 'approved' | 'rejected' | 'needs_info' | 'reassign') => {
     setActionType(type);
@@ -778,6 +771,28 @@ export const ClaimReviewPage = () => {
         )}
       </Dialog>
 
+      {/* SECURE CHAT SECTION */}
+      {claim && (claim.status === 'approved' || claim.status === 'completed') && (
+        <Box sx={{ mt: 5, mb: 3 }}>
+          <Card elevation={0} sx={{ border: '1px solid #E7DDD1', borderRadius: '16px', p: 4, textAlign: 'center', bgcolor: '#FFFCF8' }}>
+            <ChatIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+              Secure Communication Channel Unlocked
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Arrange a meeting location, time, and confirm item exchange with the other participant.
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={handleOpenChat}
+              disabled={submitting}
+              sx={{ borderRadius: '10px', fontWeight: 700, px: 4 }}
+            >
+              {submitting ? 'Opening Chat...' : '💬 Open Secure Chat'}
+            </Button>
+          </Card>
+        </Box>
+      )}
     </Container>
   );
 };

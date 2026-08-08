@@ -21,8 +21,8 @@ exports.markAsRead = async (req, res) => {
 
 exports.createNotification = async (req, res) => {
   try {
-    const { userId, title, message, type } = req.body;
-    const notification = await notificationService.createNotification(userId, title, message, type);
+    const { userId, message, type, relatedId } = req.body;
+    const notification = await notificationService.createNotification(userId, message, type, relatedId);
     res.status(201).json(notification);
   } catch (error) {
     res.status(500).json({ message: 'Error creating notification', error: error.message });

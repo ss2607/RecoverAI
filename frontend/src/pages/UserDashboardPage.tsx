@@ -20,6 +20,7 @@ import { socketService } from '../services/socketService';
 import { getItems } from '../features/items/services/itemService';
 import { getClaims } from '../features/claims/services/claimService';
 import { getMatches } from '../features/items/services/matchService';
+import { getUserConversations, type Conversation } from '../features/claims/services/chatService';
 import type { Item } from '../features/items/services/itemService';
 import type { Claim } from '../features/claims/services/claimService';
 import type { Match } from '../features/items/services/matchService';
@@ -34,7 +35,8 @@ import {
   LocationOnOutlined as LocationOnOutlinedIcon,
   CalendarTodayOutlined as CalendarTodayOutlinedIcon,
   NotificationsActiveOutlined as NotificationsActiveIcon,
-  AssignmentOutlined as AssignmentIcon
+  AssignmentOutlined as AssignmentIcon,
+  ChatBubbleOutline as ChatIcon
 } from '@mui/icons-material';
 
 export const UserDashboardPage = () => {
@@ -44,6 +46,7 @@ export const UserDashboardPage = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,10 +59,11 @@ export const UserDashboardPage = () => {
         setError(null);
 
         // Fetch concurrently
-        const [itemsData, claimsResponse, matchesData] = await Promise.all([
+        const [itemsData, claimsResponse, matchesData, conversationsData] = await Promise.all([
           getItems().catch(() => [] as Item[]),
           getClaims().catch(() => ({ success: false, data: [] as Claim[] })),
-          getMatches().catch(() => [] as Match[])
+          getMatches().catch(() => [] as Match[]),
+          getUserConversations().catch(() => [] as Conversation[])
         ]);
 
         if (Array.isArray(itemsData)) {
@@ -70,6 +74,9 @@ export const UserDashboardPage = () => {
         }
         if (Array.isArray(matchesData)) {
           setMatches(matchesData);
+        }
+        if (Array.isArray(conversationsData)) {
+          setConversations(conversationsData);
         }
       } catch (err) {
         console.error('Error fetching dashboard backend data', err);
@@ -133,18 +140,27 @@ export const UserDashboardPage = () => {
     return itemReporterId === userId && claimantId !== userId && (c.status === 'pending' || c.status === 'under_review');
   }).length;
 
+
+
   // Claimant Dashboard stats
   const myClaimsCount = userClaims.length;
 
-  const claimantUnderReviewCount = userClaims.filter(c => c.status === 'pending' || c.status === 'under_review').length;
-  const claimantApprovedCount = userClaims.filter(c => c.status === 'approved' || c.status === 'completed').length;
+  const claimantUnderReviewCount = userClaims.filter(c => c.status === 'under_review').length;
+  const claimantApprovedCount = userClaims.filter(c => c.status === 'approved').length;
   const claimantRejectedCount = userClaims.filter(c => c.status === 'rejected').length;
-
-  // Item exchange stats
-  const returnedCount = userItems.filter(i => (i.status as string) === 'returned').length;
+  const claimantReturnedCount = userClaims.filter(c => c.status === 'completed').length;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'staff';
   const claimsPath = isAdmin ? '/admin/claims' : '/claims';
+
+  const activeConversations = conversations.filter(c => {
+    const isOwner = c.owner?._id === user?.id;
+    const isClaimant = c.claimant?._id === user?.id;
+    const isParticipant = isOwner || isClaimant;
+    const isApproved = c.claim?.status === 'approved';
+    const isNotReturned = c.item?.status !== 'returned';
+    return isParticipant && isApproved && isNotReturned;
+  });
 
   const stats = [
     { 
@@ -199,7 +215,7 @@ export const UserDashboardPage = () => {
       trend: claimantApprovedCount > 0 ? `+${claimantApprovedCount} approved` : 'None', 
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#4F8A5B',
-      path: `${claimsPath}?status=approved`
+      path: isAdmin ? '/admin/claims?status=approved' : '/claims?status=approved'
     },
     { 
       label: 'Rejected', 
@@ -208,16 +224,16 @@ export const UserDashboardPage = () => {
       trend: claimantRejectedCount > 0 ? `${claimantRejectedCount} rejected` : 'None', 
       icon: <ReportProblemOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#B24C4C',
-      path: `${claimsPath}?status=rejected`
+      path: isAdmin ? '/admin/claims?status=rejected' : '/claims?status=rejected'
     },
     { 
       label: 'Returned Items', 
-      value: String(returnedCount), 
+      value: String(claimantReturnedCount), 
       desc: 'Completed returns', 
-      trend: returnedCount > 0 ? `${returnedCount} returned` : 'None', 
+      trend: claimantReturnedCount > 0 ? `${claimantReturnedCount} returned` : 'None', 
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22 }} />, 
       color: '#4F8A5B',
-      path: `${claimsPath}?status=completed`
+      path: isAdmin ? '/admin/claims?status=completed' : '/claims?status=completed'
     }
   ];
 
@@ -777,6 +793,102 @@ export const UserDashboardPage = () => {
                         </Box>
                       </Box>
                     ))}
+                  </Stack>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Active Conversations Widget */}
+            <Card elevation={0} sx={{ borderRadius: '18px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8' }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Avatar sx={{ bgcolor: 'rgba(123, 91, 61, 0.08)', color: 'secondary.main', width: 34, height: 34 }}>
+                      <ChatIcon sx={{ fontSize: 18 }} />
+                    </Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      Active Chats
+                    </Typography>
+                  </Box>
+                  <Button 
+                    component={Link} 
+                    to="/conversations" 
+                    variant="text" 
+                    size="small"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    View All
+                  </Button>
+                </Box>
+                <Divider sx={{ mb: 2.5 }} />
+
+                {activeConversations.length === 0 ? (
+                  <Box sx={{ py: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No conversations yet.
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Chats become available once a claim is approved.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {activeConversations.slice(0, 3).map((conv) => {
+                      const isOwner = conv.owner?._id === user?.id;
+                      const otherUser = isOwner ? conv.claimant : conv.owner;
+                      const unreadCount = isOwner ? conv.unreadCountOwner : conv.unreadCountClaimant;
+
+                      return (
+                        <Box 
+                          key={conv._id}
+                          sx={{ 
+                            p: 2, 
+                            borderRadius: '12px', 
+                            border: '1px solid #E7DDD1',
+                            bgcolor: 'background.default',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1
+                          }}
+                        >
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                              {conv.item?.title || 'Unknown Item'}
+                            </Typography>
+                            {unreadCount > 0 && (
+                              <Chip 
+                                label={`${unreadCount} new`} 
+                                size="small" 
+                                color="error" 
+                                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 800 }}
+                              />
+                            )}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                            Chat with: {otherUser?.name || 'Unknown User'}
+                          </Typography>
+                          {conv.lastMessage && (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              "{conv.lastMessage}"
+                            </Typography>
+                          )}
+                          <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
+                            <Typography variant="caption" color="text.secondary">
+                              {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </Typography>
+                            <Button
+                              component={Link}
+                              to={`/conversations/${conv._id}`}
+                              size="small"
+                              variant="outlined"
+                              sx={{ py: 0.5, borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}
+                            >
+                              Open Chat
+                            </Button>
+                          </Box>
+                        </Box>
+                      );
+                    })}
                   </Stack>
                 )}
               </CardContent>

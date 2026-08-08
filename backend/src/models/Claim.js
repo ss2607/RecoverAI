@@ -33,6 +33,14 @@ const claimSchema = new mongoose.Schema({
   },
   reviewNotes: {
     type: String
+  },
+  ownerConfirmedReturn: {
+    type: Boolean,
+    default: false
+  },
+  claimantConfirmedReturn: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

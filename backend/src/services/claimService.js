@@ -1,6 +1,8 @@
 const Claim = require('../models/Claim');
 const Item = require('../models/Item');
 const Notification = require('../models/Notification');
+const Conversation = require('../models/Conversation');
+const conversationService = require('./conversationService');
 const verificationService = require('./verificationService');
 const ApiError = require('../utils/apiError');
 
@@ -378,60 +380,83 @@ const confirmReturn = async (
     );
   }
 
-  claim.status = 'completed';
+  // Update confirmation flags
+  if (isOwner) {
+    claim.ownerConfirmedReturn = true;
+  }
+  if (isClaimant) {
+    claim.claimantConfirmedReturn = true;
+  }
+
+  const bothConfirmed = claim.ownerConfirmedReturn && claim.claimantConfirmedReturn;
+
+  if (bothConfirmed) {
+    claim.status = 'completed';
+    claim.item.status = 'returned';
+    await claim.item.save();
+  }
+
   await claim.save();
 
-  claim.item.status = 'returned';
-  await claim.item.save();
+  // Find the conversation to send system message and trigger socket updates
+  const conversation = await Conversation.findOne({ claim: claim._id });
+  if (conversation) {
+    if (bothConfirmed) {
+      conversation.meetingStatus = 'completed';
+      await conversation.save();
 
-  await createNotification(
-    claim.claimant,
-    'item_returned',
-    `Exchange confirmed: item ${claim.item.title} has been successfully returned.`,
-    claim._id
-  );
+      // Automatically generate a system message
+      await conversationService.sendMessage(
+        conversation._id,
+        userId,
+        "✅ Exchange completed successfully.\n\nOwner confirmed return.\nClaimant confirmed return.\n\nThe item has been marked as returned.\n\nConversation archived.",
+        '',
+        true
+      );
+    }
 
-  await createNotification(
-    claim.item.reportedBy,
-    'item_returned',
-    `Exchange confirmed: item ${claim.item.title} has been successfully returned.`,
-    claim._id
-  );
+    try {
+      const { emitToUser } = require('../config/socket');
+      const Message = require('../models/Message');
 
-  try {
-    const { emitToUser } = require('../config/socket');
+      const ownerId = claim.item.reportedBy.toString();
+      const claimantId = (claim.claimant._id || claim.claimant).toString();
 
-    const ownerId = claim.item.reportedBy;
-    const claimantId =
-      claim.claimant._id || claim.claimant;
+      // Emit meeting_updated to both users to trigger reload of conversation
+      emitToUser(ownerId, 'meeting_updated', { conversationId: conversation._id });
+      emitToUser(claimantId, 'meeting_updated', { conversationId: conversation._id });
 
-    emitToUser(
-      claimantId.toString(),
+      if (bothConfirmed) {
+        emitToUser(claimantId, 'item_returned', claim);
+        emitToUser(ownerId, 'item_returned', claim);
+        emitToUser(claimantId, 'stats_updated', {});
+        emitToUser(ownerId, 'stats_updated', {});
+
+        // Emit receive_message event so the system message appears instantly
+        const messages = await Message.find({ conversation: conversation._id }).sort({ createdAt: -1 }).limit(1);
+        if (messages.length > 0) {
+          emitToUser(claimantId, 'receive_message', { conversationId: conversation._id, message: messages[0] });
+          emitToUser(ownerId, 'receive_message', { conversationId: conversation._id, message: messages[0] });
+        }
+      }
+    } catch (err) {
+      console.error('Error emitting confirm return socket events:', err);
+    }
+  }
+
+  if (bothConfirmed) {
+    await createNotification(
+      claim.claimant,
       'item_returned',
-      claim
+      `Exchange confirmed: item ${claim.item.title} has been successfully returned.`,
+      claim._id
     );
 
-    emitToUser(
-      ownerId.toString(),
+    await createNotification(
+      claim.item.reportedBy,
       'item_returned',
-      claim
-    );
-
-    emitToUser(
-      claimantId.toString(),
-      'stats_updated',
-      {}
-    );
-
-    emitToUser(
-      ownerId.toString(),
-      'stats_updated',
-      {}
-    );
-  } catch (err) {
-    console.error(
-      'Error emitting confirm return socket events:',
-      err
+      `Exchange confirmed: item ${claim.item.title} has been successfully returned.`,
+      claim._id
     );
   }
 
