@@ -33,8 +33,55 @@ const getItems = async (req, res, next) => {
     const query = req.query;
     const items = await itemService.getItems(query);
 
+    let augmentedItems = items;
+    if (req.user && req.user._id) {
+      const Claim = require('../models/Claim');
+      const Conversation = require('../models/Conversation');
+
+      const claims = await Claim.find({ claimant: req.user._id }).sort({ createdAt: -1 });
+      const conversations = await Conversation.find({ claimant: req.user._id });
+
+      const claimsMap = {};
+      claims.forEach(c => {
+        const itemId = c.item.toString();
+        if (!claimsMap[itemId]) {
+          claimsMap[itemId] = c;
+        }
+      });
+
+      const conversationsMap = {};
+      conversations.forEach(conv => {
+        conversationsMap[conv.claim.toString()] = conv;
+      });
+
+      augmentedItems = items.map(item => {
+        const itemObj = item.toObject ? item.toObject() : item;
+        const isOwner = item.reportedBy && (item.reportedBy._id || item.reportedBy).toString() === req.user._id.toString();
+        const claim = claimsMap[item._id.toString()];
+        const hasClaim = !!claim;
+        const latestClaimStatus = claim ? claim.status : null;
+        
+        let conversationId = null;
+        if (claim && claim.status === 'approved') {
+          const conversation = conversationsMap[claim._id.toString()];
+          if (conversation) {
+            conversationId = conversation._id;
+          }
+        }
+
+        return {
+          ...itemObj,
+          isOwner,
+          hasClaim,
+          latestClaimStatus,
+          conversationId,
+          itemStatus: item.status
+        };
+      });
+    }
+
     return res.status(200).json(
-      new ApiResponse(200, items, 'Items retrieved successfully')
+      new ApiResponse(200, augmentedItems, 'Items retrieved successfully')
     );
   } catch (error) {
     next(error);

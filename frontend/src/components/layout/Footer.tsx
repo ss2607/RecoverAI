@@ -56,9 +56,7 @@ export const Footer = () => {
               <MuiLink component={Link} to="/items/report" color="text.secondary" variant="body2" sx={{ textDecoration: 'none', fontWeight: 500, '&:hover': { color: 'primary.main' } }}>
                 Report lost item
               </MuiLink>
-              <MuiLink component={Link} to="/qr/scan" color="text.secondary" variant="body2" sx={{ textDecoration: 'none', fontWeight: 500, '&:hover': { color: 'primary.main' } }}>
-                Scan QR tag
-              </MuiLink>
+
             </Box>
           </Grid>
 

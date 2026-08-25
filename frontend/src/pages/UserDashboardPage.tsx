@@ -29,7 +29,6 @@ import {
   Inventory2Outlined as Inventory2OutlinedIcon,
   AutoAwesomeOutlined as AutoAwesomeOutlinedIcon,
   ReportProblemOutlined as ReportProblemOutlinedIcon,
-  QrCodeScannerOutlined as QrCodeScannerOutlinedIcon,
   SearchOutlined as SearchOutlinedIcon,
   ArrowForward as ArrowForwardIcon,
   LocationOnOutlined as LocationOnOutlinedIcon,
@@ -255,12 +254,6 @@ export const UserDashboardPage = () => {
       icon: <ReportProblemOutlinedIcon sx={{ fontSize: 20 }} />, 
       path: '/items', 
       desc: 'Search reported items list' 
-    },
-    { 
-      title: 'Scan QR Code', 
-      icon: <QrCodeScannerOutlinedIcon sx={{ fontSize: 20 }} />, 
-      path: '/qr/scan', 
-      desc: 'Scan tag to contact owner' 
     },
   ];
 

@@ -22,7 +22,6 @@ const claimRoutes = require('./routes/claimRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const qrRoutes = require('./routes/qrRoutes');
 const conversationRoutes = require('./routes/conversationRoutes');
 
 app.use(express.json());
@@ -36,7 +35,6 @@ app.use('/api/claims', claimRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/qr', qrRoutes);
 app.use('/api/conversations', conversationRoutes);
 
 module.exports = app;

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
+import { AuthContext } from '../../auth/context/AuthContext';
 import {
   Container,
   Typography,
@@ -27,7 +28,6 @@ import {
   ColorLensOutlined as ColorLensOutlinedIcon,
   BrandingWatermarkOutlined as BrandingWatermarkOutlinedIcon,
   AutoAwesomeOutlined as AutoAwesomeIcon,
-  QrCodeOutlined as QrCodeIcon,
   ShareOutlined as ShareIcon,
   WarningAmberOutlined as WarningIcon,
   BookmarkBorderOutlined as BookmarkIcon,
@@ -135,6 +135,7 @@ export const SimilarItemCard = ({
 
 export const ItemDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useContext(AuthContext);
   const [item, setItem] = useState<Item | null>(null);
   const [similarItems, setSimilarItems] = useState<Item[]>([]);
   const [aiMatches, setAiMatches] = useState<any[]>([]);
@@ -294,6 +295,16 @@ export const ItemDetailsPage = () => {
   const locationStr = item.location || 'Unknown Location';
   const brandStr = item.brand || 'Unspecified';
   const colorStr = item.color || 'Unspecified';
+
+  const isOwner = item
+    ? typeof item.reportedBy === 'object'
+      ? (item.reportedBy as any)?._id === user?.id
+      : item.reportedBy === user?.id
+    : false;
+
+  const filteredMatches = item
+    ? aiMatches.filter(match => match.item?.type !== item.type)
+    : [];
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }} className="fade-in">
@@ -689,44 +700,68 @@ export const ItemDetailsPage = () => {
                 </Typography>
 
                 <Stack spacing={2}>
-                  <Button
-                    component={Link}
-                    to={`/claims/create/${item._id}`}
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    size="large"
-                    sx={{ py: 1.5, fontWeight: 700 }}
-                  >
-                    Claim this Item
-                  </Button>
-
-                  <Tooltip title="Coming soon">
-                    <span>
+                  {isOwner ? (
+                    <>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontStyle: 'italic', fontWeight: 600 }}>
+                        You reported this item.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        fullWidth
+                        size="large"
+                        onClick={() => alert('Edit item functionality coming soon!')}
+                        sx={{ py: 1.5, fontWeight: 700 }}
+                      >
+                        ✏ Edit Item Details
+                      </Button>
                       <Button
                         variant="outlined"
+                        color="secondary"
+                        fullWidth
+                        size="large"
+                        onClick={() => {
+                          const el = document.getElementById('matches-section');
+                          el?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        sx={{ py: 1.5, fontWeight: 700 }}
+                      >
+                        🔍 View Matches
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        component={Link}
+                        to={`/claims/create/${item._id}`}
+                        variant="contained"
                         color="primary"
                         fullWidth
                         size="large"
-                        disabled
-                        startIcon={<ChatIcon />}
                         sx={{ py: 1.5, fontWeight: 700 }}
                       >
-                        Contact Finder
+                        Claim this Item
                       </Button>
-                    </span>
-                  </Tooltip>
 
-                  <Button
-                    component={Link}
-                    to={`/qr/generate/${item._id}`}
-                    variant="text"
-                    fullWidth
-                    startIcon={<QrCodeIcon />}
-                    sx={{ justifyContent: 'flex-start', color: 'text.secondary', fontWeight: 600 }}
-                  >
-                    Generate QR Tag
-                  </Button>
+                      <Tooltip title="Coming soon">
+                        <span>
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            fullWidth
+                            size="large"
+                            disabled
+                            startIcon={<ChatIcon />}
+                            sx={{ py: 1.5, fontWeight: 700 }}
+                          >
+                            Contact Finder
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    </>
+                  )}
+
+
 
                   <Button
                     variant="text"
@@ -808,7 +843,7 @@ export const ItemDetailsPage = () => {
       </Grid>
 
       {/* SECTION 8.5: AI Match Suggestions */}
-      <Box sx={{ mt: 8, mb: 2 }}>
+      <Box id="matches-section" sx={{ mt: 8, mb: 2 }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
           AI Match Suggestions <Chip icon={<AutoAwesomeIcon sx={{ fontSize: '14px !important', color: '#4F8A5B !important' }} />} label="Gemini Engine" color="success" size="small" variant="outlined" sx={{ fontWeight: 700, borderColor: 'rgba(79, 138, 91, 0.25)', bgcolor: 'rgba(79, 138, 91, 0.04)' }} />
         </Typography>
@@ -824,7 +859,7 @@ export const ItemDetailsPage = () => {
               </Grid>
             ))}
           </Grid>
-        ) : aiMatches.length === 0 ? (
+        ) : filteredMatches.length === 0 ? (
           /* Premium Empty State */
           <Box
             sx={{
@@ -853,7 +888,7 @@ export const ItemDetailsPage = () => {
               <AutoAwesomeIcon sx={{ fontSize: 32, color: '#B88A5A' }} />
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
-              No AI Matches Found Yet
+              No relevant AI matches found for this report.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto', mb: 4, lineHeight: 1.6, fontWeight: 500 }}>
               We'll continue scanning new reports automatically for potential ownership matches.
@@ -875,7 +910,7 @@ export const ItemDetailsPage = () => {
                 <Card elevation={0} sx={{ borderRadius: '14px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8' }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Potential Matches</Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 850, mt: 1, color: 'text.primary' }}>{aiMatches.length}</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 850, mt: 1, color: 'text.primary' }}>{filteredMatches.length}</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -884,7 +919,7 @@ export const ItemDetailsPage = () => {
                   <CardContent sx={{ p: 2.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Highest Confidence</Typography>
                     <Typography variant="h4" sx={{ fontWeight: 850, mt: 1, color: '#4F8A5B' }}>
-                      {aiMatches.length > 0 ? Math.max(...aiMatches.map(m => m.similarityScore)) : 0}%
+                      {filteredMatches.length > 0 ? Math.max(...filteredMatches.map(m => m.similarityScore)) : 0}%
                     </Typography>
                   </CardContent>
                 </Card>
@@ -894,7 +929,7 @@ export const ItemDetailsPage = () => {
                   <CardContent sx={{ p: 2.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Average Match</Typography>
                     <Typography variant="h4" sx={{ fontWeight: 850, mt: 1, color: '#D59B3A' }}>
-                      {aiMatches.length > 0 ? Math.round(aiMatches.reduce((acc, curr) => acc + curr.similarityScore, 0) / aiMatches.length) : 0}%
+                      {filteredMatches.length > 0 ? Math.round(filteredMatches.reduce((acc, curr) => acc + curr.similarityScore, 0) / filteredMatches.length) : 0}%
                     </Typography>
                   </CardContent>
                 </Card>
@@ -913,7 +948,7 @@ export const ItemDetailsPage = () => {
 
             {/* Recommendations Grid */}
             <Grid container spacing={3}>
-              {aiMatches.map((matchData, idx) => (
+              {filteredMatches.map((matchData, idx) => (
                 <Grid item xs={12} sm={6} md={4} key={idx}>
                   <AIRecommendationCard
                     item={matchData.item}

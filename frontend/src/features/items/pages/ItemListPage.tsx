@@ -324,7 +324,7 @@ export const ItemListPage = () => {
                       </Box>
                     </Box>
                   </CardContent>
-                  <Box sx={{ p: 3, pt: 0 }}>
+                  <Box sx={{ p: 3, pt: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <Button 
                       component={Link} 
                       to={`/items/${itemId}`} 
@@ -336,6 +336,111 @@ export const ItemListPage = () => {
                     >
                       View Details
                     </Button>
+
+                    {(() => {
+                      if (item.isOwner) {
+                        return (
+                          <Button 
+                            component={Link} 
+                            to={`/items/${itemId}`} 
+                            variant="contained" 
+                            color="secondary"
+                            fullWidth
+                            sx={{ py: 1.2, fontWeight: 700 }}
+                          >
+                            ✏ Manage Item
+                          </Button>
+                        );
+                      }
+
+                      if (item.itemStatus === 'returned') {
+                        return (
+                          <Button 
+                            variant="contained" 
+                            color="success"
+                            fullWidth
+                            disabled
+                            sx={{ py: 1.2, fontWeight: 700, "&.Mui-disabled": { bgcolor: 'success.main', color: 'success.contrastText', opacity: 0.8 } }}
+                          >
+                            ✅ Returned
+                          </Button>
+                        );
+                      }
+
+                      if (!item.hasClaim) {
+                        return (
+                          <Button 
+                            component={Link} 
+                            to={`/claims/create/${itemId}`} 
+                            variant="contained" 
+                            color="primary"
+                            fullWidth
+                            sx={{ py: 1.2, fontWeight: 700 }}
+                          >
+                            Claim Item
+                          </Button>
+                        );
+                      }
+
+                      if (item.latestClaimStatus === 'pending') {
+                        return (
+                          <Button 
+                            variant="contained" 
+                            color="warning"
+                            fullWidth
+                            disabled
+                            sx={{ py: 1.2, fontWeight: 700 }}
+                          >
+                            ⏳ Pending Review
+                          </Button>
+                        );
+                      }
+
+                      if (item.latestClaimStatus === 'under_review') {
+                        return (
+                          <Button 
+                            variant="contained" 
+                            color="warning"
+                            fullWidth
+                            disabled
+                            sx={{ py: 1.2, fontWeight: 700 }}
+                          >
+                            ⏳ Under Review
+                          </Button>
+                        );
+                      }
+
+                      if (item.latestClaimStatus === 'approved') {
+                        return (
+                          <Button 
+                            component={Link} 
+                            to={`/conversations/${item.conversationId}`} 
+                            variant="contained" 
+                            color="success"
+                            fullWidth
+                            sx={{ py: 1.2, fontWeight: 700 }}
+                          >
+                            💬 Open Chat
+                          </Button>
+                        );
+                      }
+
+                      if (item.latestClaimStatus === 'rejected') {
+                        return (
+                          <Button 
+                            variant="contained" 
+                            color="error"
+                            fullWidth
+                            disabled
+                            sx={{ py: 1.2, fontWeight: 700 }}
+                          >
+                            ❌ Claim Rejected
+                          </Button>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </Box>
                 </Card>
               </Grid>

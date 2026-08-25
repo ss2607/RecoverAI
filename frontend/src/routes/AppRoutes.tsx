@@ -24,9 +24,6 @@ import { ChangePasswordPage } from '../features/profile/pages/ChangePasswordPage
 import { NotificationsPage } from '../features/notifications/pages/NotificationsPage';
 
 import { SocketProvider } from '../context/SocketContext';
-import { QRItemPage } from '../features/qr/pages/QRItemPage';
-import { QRScannerPage } from '../features/qr/pages/QRScannerPage';
-import { QRDetailsPage } from '../features/qr/pages/QRDetailsPage';
 
 import { Layout } from '../components/layout/Layout';
 import { LandingPage } from '../pages/LandingPage';
@@ -86,11 +83,6 @@ export const AppRoutes: React.FC = () => {
             <Route path="/profile/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
             
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            
-            <Route path="/qr/generate/:id" element={<ProtectedRoute><QRItemPage /></ProtectedRoute>} />
-            <Route path="/qr/scan" element={<QRScannerPage />} />
-            <Route path="/qr/scan/:code" element={<QRDetailsPage />} />
-            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

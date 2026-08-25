@@ -22,6 +22,14 @@ const createClaim = async (itemId, userId, answers) => {
     throw new ApiError(404, 'Item not found');
   }
 
+  if (item.reportedBy.toString() === userId.toString()) {
+    throw new ApiError(400, 'Owners cannot claim their own items');
+  }
+
+  if (item.status === 'returned') {
+    throw new ApiError(400, 'This item has already been returned and cannot be claimed');
+  }
+
   // 1. Check whether an active claim already exists for the same item and claimant.
   const activeStatuses = ['pending', 'under_review', 'approved', 'needs_info', 'completed'];
   const existingClaim = await Claim.findOne({

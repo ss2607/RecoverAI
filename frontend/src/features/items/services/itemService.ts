@@ -18,6 +18,11 @@ export interface Item {
   status: 'open' | 'matched' | 'claimed' | 'returned' | 'closed' | 'claim_pending' | 'awaiting_exchange';
   reportedBy: string | { _id: string, name: string, email: string };
   verificationQuestions?: { _id: string; question: string }[];
+  isOwner?: boolean;
+  hasClaim?: boolean;
+  latestClaimStatus?: string;
+  conversationId?: string;
+  itemStatus?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -2,7 +2,6 @@ import { Box, Button, Container, Grid, Typography, Card, CardContent, Avatar, Ra
 import { Link } from 'react-router-dom';
 import { 
   AutoAwesomeOutlined as AutoAwesomeOutlinedIcon,
-  QrCodeScannerOutlined as QrCodeScannerOutlinedIcon,
   VerifiedOutlined as VerifiedOutlinedIcon,
   NotificationsActiveOutlined as NotificationsActiveOutlinedIcon,
   ImageSearchOutlined as ImageSearchOutlinedIcon,
@@ -163,11 +162,7 @@ export const LandingPage = () => {
                 title: 'Smart Matching',
                 desc: 'Our neural matching backend runs background scans to suggest near-instant matches based on attributes, location, and visual similarity.'
               },
-              {
-                icon: <QrCodeScannerOutlinedIcon sx={{ fontSize: 32 }} />,
-                title: 'QR Recovery Tags',
-                desc: 'Generate scan-ready QR stickers for keys, wallets, or electronics. Scanners can message you securely without exposing phone numbers.'
-              },
+
               {
                 icon: <VerifiedOutlinedIcon sx={{ fontSize: 32 }} />,
                 title: 'Secure Verification',
@@ -286,7 +281,7 @@ export const LandingPage = () => {
               {
                 name: 'David Carter',
                 role: 'Full Stack Engineer',
-                quote: 'I attach RecoverAI QR codes to my camera gear. I lost my keys at a coffee shop, and someone scanned the tag and messaged me. I didn’t have to share any private contact info.',
+                quote: 'I lost my keys at a coffee shop, and a matching report was instantly suggested. The finder and I coordinated a safe meet-up on the built-in chat without sharing private info.',
                 avatar: 'DC'
               },
               {
@@ -338,7 +333,7 @@ export const LandingPage = () => {
             Ready to secure your belongings?
           </Typography>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 5, fontWeight: 400, maxWidth: '600px', mx: 'auto' }}>
-            Create a free account to report lost items, generate recovery QR tags, or register items you find.
+            Create a free account to report lost items, verify ownership, or register items you find.
           </Typography>
           <Button 
             component={Link} 
