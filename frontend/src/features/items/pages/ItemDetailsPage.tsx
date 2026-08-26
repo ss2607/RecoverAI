@@ -31,8 +31,7 @@ import {
   ShareOutlined as ShareIcon,
   WarningAmberOutlined as WarningIcon,
   BookmarkBorderOutlined as BookmarkIcon,
-  ChatBubbleOutlineOutlined as ChatIcon,
-  MapOutlined as MapIcon
+  ChatBubbleOutlineOutlined as ChatIcon
 } from '@mui/icons-material';
 
 // ----------------------------------------------------------------------
@@ -635,41 +634,6 @@ export const ItemDetailsPage = () => {
               </CardContent>
             </Card>
 
-            {/* SECTION 6: Location Card */}
-            <Card elevation={0} sx={{ borderRadius: '18px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8' }}>
-              <CardContent sx={{ p: 4 }}>
-                <Box display="flex" alignItems="center" gap={1.5} mb={2.5}>
-                  <Avatar sx={{ bgcolor: 'rgba(123, 91, 61, 0.08)', color: 'secondary.main', width: 34, height: 34 }}>
-                    <MapIcon sx={{ fontSize: 18 }} />
-                  </Avatar>
-                  <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                    Reported Area Map
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  This item was reported near: <strong>{locationStr}</strong>.
-                </Typography>
-                {/* Visual Map Placeholder */}
-                <Box
-                  sx={{
-                    height: 200,
-                    borderRadius: '12px',
-                    bgcolor: 'background.default',
-                    border: '1px solid #E7DDD1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: 1
-                  }}
-                >
-                  <MapIcon sx={{ fontSize: 32, color: 'primary.main', opacity: 0.6 }} />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Interactive map will be available in a future update.
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
 
           </Stack>
         </Grid>

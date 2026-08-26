@@ -581,15 +581,18 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
           {activeStep === 2 && (
             <Card elevation={0} sx={{ borderRadius: '18px', border: '1px solid #E7DDD1', bgcolor: '#FFFCF8' }}>
               <CardContent sx={{ p: 4 }}>
-                <Box display="flex" alignItems="center" gap={1.5} mb={3} width="100%">
+                <Box display="flex" alignItems="center" gap={1.5} mb={2} width="100%">
                   <Avatar sx={{ bgcolor: 'rgba(184, 138, 90, 0.08)', color: 'primary.main', width: 36, height: 36 }}>
                     <AutoAwesomeIcon sx={{ fontSize: 18 }} />
                   </Avatar>
                   <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                    AI Verification Questions
+                    Verification Questions
                   </Typography>
-                  <Chip label="5 Questions" size="small" color="primary" variant="outlined" sx={{ ml: 'auto', fontWeight: 700 }} />
+                  <Chip label={`${questions.length} Questions`} size="small" color="primary" variant="outlined" sx={{ ml: 'auto', fontWeight: 700 }} />
                 </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Answer a few questions about the item to help verify your ownership.
+                </Typography>
 
                 {loadingQuestions ? (
                   <Stack direction="column" alignItems="center" sx={{ py: 6 }}>
@@ -687,7 +690,7 @@ export const ClaimForm: React.FC<ClaimFormProps> = ({ item }) => {
 
                   {questions.length > 0 && (
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Security Verification Responses</Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Verification Responses</Typography>
                       <Stack spacing={1}>
                         {questions.map((q, index) => (
                           <Box key={q._id} sx={{ p: 2, borderRadius: '12px', bgcolor: 'background.default', border: '1px solid #E7DDD1' }}>

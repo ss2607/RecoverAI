@@ -22,7 +22,7 @@ import {
   Dialog,
   DialogContent
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createItem } from '../services/itemService';
 import { uploadImage } from '../services/uploadService';
 import { useImageAnalysis } from '../hooks/useImageAnalysis';
@@ -31,12 +31,12 @@ import {
   LightbulbOutlined as LightbulbIcon,
   AutoAwesomeOutlined as AutoAwesomeIcon,
   InfoOutlined as InfoIcon,
-  VerifiedUserOutlined as VerifiedUserIcon,
-  CheckCircleOutlined as CheckCircleIcon
+  VerifiedUserOutlined as VerifiedUserIcon
 } from '@mui/icons-material';
 
 export const ReportItemPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // States
@@ -44,18 +44,22 @@ export const ReportItemPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
-  const [formData, setFormData] = useState({
-    type: 'lost',
-    title: '',
-    description: '',
-    category: '',
-    color: '',
-    brand: '',
-    location: '',
-    dateLostFound: new Date().toISOString().split('T')[0],
-    images: [] as string[],
-    status: 'open',
-    notes: '' // Additional Notes
+  const [formData, setFormData] = useState(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const typeParam = queryParams.get('type') || 'lost';
+    return {
+      type: typeParam,
+      title: '',
+      description: '',
+      category: '',
+      color: '',
+      brand: '',
+      location: '',
+      dateLostFound: new Date().toISOString().split('T')[0],
+      images: [] as string[],
+      status: 'open',
+      notes: '' // Additional Notes
+    };
   });
 
   // Image Upload States
@@ -63,7 +67,6 @@ export const ReportItemPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
-  const [uploadedFileName, setUploadedFileName] = useState('');
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
   // AI Analysis States
@@ -108,14 +111,19 @@ export const ReportItemPage: React.FC = () => {
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      await processFile(files[0]);
+      for (let i = 0; i < files.length; i++) {
+        await processFile(files[i]);
+      }
     }
   };
 
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError('');
     if (e.target.files && e.target.files.length > 0) {
-      await processFile(e.target.files[0]);
+      const files = e.target.files;
+      for (let i = 0; i < files.length; i++) {
+        await processFile(files[i]);
+      }
     }
   };
 
@@ -145,11 +153,15 @@ export const ReportItemPage: React.FC = () => {
 
       if ((response.statusCode === 200 || response.statusCode === 201) && response.data?.url) {
         const imageUrl = response.data.url;
-        setUploadedFileName(file.name);
-        setFormData(prev => ({
-          ...prev,
-          images: [imageUrl]
-        }));
+        
+        let isFirstImage = false;
+        setFormData(prev => {
+          isFirstImage = prev.images.length === 0;
+          return {
+            ...prev,
+            images: [...prev.images, imageUrl]
+          };
+        });
 
         // Auto-trigger step update
         if (activeStep === 0) {
@@ -157,7 +169,11 @@ export const ReportItemPage: React.FC = () => {
         }
 
         // Trigger AI analysis automatically on first upload
-        triggerAiAnalysis(imageUrl);
+        setTimeout(() => {
+          if (isFirstImage) {
+            triggerAiAnalysis(imageUrl);
+          }
+        }, 100);
       } else {
         setUploadError(response.message || 'Upload failed');
       }
@@ -168,16 +184,22 @@ export const ReportItemPage: React.FC = () => {
     }
   };
 
-  const handleRemoveImage = () => {
-    setFormData(prev => ({
-      ...prev,
-      images: []
-    }));
-    setUploadedFileName('');
-    setAiResult(null);
-    setAiTags([]);
-    setActiveStep(0);
+  const handleRemoveIndividualImage = (idxToRemove: number) => {
+    setFormData(prev => {
+      const newImages = prev.images.filter((_, idx) => idx !== idxToRemove);
+      if (newImages.length === 0) {
+        setAiResult(null);
+        setAiTags([]);
+        setActiveStep(0);
+      }
+      return {
+        ...prev,
+        images: newImages
+      };
+    });
   };
+
+
 
   const triggerAiAnalysis = async (url: string) => {
     console.log("Calling AI...");
@@ -461,113 +483,121 @@ export const ReportItemPage: React.FC = () => {
                     Upload Item Images
                   </Typography>
 
-                  {/* Hidden file input */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    accept="image/*"
-                    onChange={handleFileInput}
-                  />
+                   {/* Hidden file input */}
+                   <input
+                     type="file"
+                     ref={fileInputRef}
+                     style={{ display: 'none' }}
+                     accept="image/*"
+                     multiple
+                     onChange={handleFileInput}
+                   />
 
-                  {uploadError && (
-                    <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }}>
-                      {uploadError}
-                    </Alert>
-                  )}
+                   {uploadError && (
+                     <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }}>
+                       {uploadError}
+                     </Alert>
+                   )}
 
-                  {/* State 2: Uploading */}
-                  {isUploading && (
-                    <Box
-                      sx={{
-                        p: 5,
-                        textAlign: 'center',
-                        borderRadius: '16px',
-                        border: '1px solid #E7DDD1',
-                        bgcolor: '#FFFCF8',
-                        minHeight: 200,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 2,
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        Uploading image... {uploadProgress}%
-                      </Typography>
-                      <Box sx={{ width: '80%', maxWidth: 320 }}>
-                        <LinearProgress variant="determinate" value={uploadProgress} sx={{ height: 8, borderRadius: 4 }} />
-                      </Box>
-                    </Box>
-                  )}
+                   {/* Grid of uploaded images */}
+                   {formData.images.length > 0 && (
+                     <Box sx={{ mb: 3 }}>
+                       <Grid container spacing={2}>
+                         {formData.images.map((imgUrl, index) => (
+                           <Grid item xs={6} sm={4} md={3} key={index}>
+                             <Card
+                               elevation={0}
+                               sx={{
+                                 position: 'relative',
+                                 borderRadius: '12px',
+                                 border: '1px solid #E7DDD1',
+                                 overflow: 'hidden',
+                                 height: 120,
+                                 bgcolor: '#FFFCF8'
+                               }}
+                             >
+                               <Box
+                                 component="img"
+                                 src={imgUrl}
+                                 alt={`Uploaded preview ${index + 1}`}
+                                 sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                               />
+                               {/* Controls overlay */}
+                               <Box sx={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 0.5 }}>
+                                 <Button
+                                   size="small"
+                                   variant="contained"
+                                   color="error"
+                                   onClick={() => handleRemoveIndividualImage(index)}
+                                   sx={{
+                                     minWidth: 20,
+                                     width: 20,
+                                     height: 20,
+                                     p: 0,
+                                     borderRadius: '50%',
+                                     fontSize: '0.65rem',
+                                     lineHeight: 1
+                                   }}
+                                 >
+                                   ✕
+                                 </Button>
+                               </Box>
+                               <Box sx={{ position: 'absolute', bottom: 6, left: 6 }}>
+                                 <Button
+                                   size="small"
+                                   variant="contained"
+                                   color="primary"
+                                   onClick={() => setZoomImage(imgUrl)}
+                                   sx={{
+                                     minWidth: 20,
+                                     height: 20,
+                                     fontSize: '0.65rem',
+                                     px: 1,
+                                     py: 0,
+                                     textTransform: 'none',
+                                     borderRadius: '6px'
+                                   }}
+                                 >
+                                   Zoom
+                                 </Button>
+                               </Box>
+                             </Card>
+                           </Grid>
+                         ))}
+                       </Grid>
+                     </Box>
+                   )}
 
-                  {/* State 3: Uploaded */}
-                  {!isUploading && formData.images.length > 0 && (
-                    <Box className="fade-in" sx={{ transition: 'all 0.3s ease' }}>
-                      <Card
-                        elevation={0}
-                        sx={{
-                          position: 'relative',
-                          borderRadius: '16px',
-                          border: '1px solid #E7DDD1',
-                          overflow: 'hidden',
-                          maxHeight: '320px',
-                          width: '100%',
-                          bgcolor: '#FFFCF8'
-                        }}
-                      >
-                        <Box
-                          component="img"
-                          src={formData.images[0]}
-                          alt="Uploaded preview"
-                          sx={{
-                            width: '100%',
-                            height: '100%',
-                            maxHeight: '320px',
-                            objectFit: 'cover',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': {
-                              transform: 'scale(1.02)'
-                            }
-                          }}
-                        />
+                   {/* State 2: Uploading */}
+                   {isUploading && (
+                     <Box
+                       sx={{
+                         p: 5,
+                         textAlign: 'center',
+                         borderRadius: '16px',
+                         border: '1px solid #E7DDD1',
+                         bgcolor: '#FFFCF8',
+                         minHeight: 150,
+                         display: 'flex',
+                         flexDirection: 'column',
+                         justifyContent: 'center',
+                         alignItems: 'center',
+                         gap: 2,
+                         mb: 3,
+                         transition: 'all 0.3s ease'
+                       }}
+                     >
+                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                         Uploading image... {uploadProgress}%
+                       </Typography>
+                       <Box sx={{ width: '80%', maxWidth: 320 }}>
+                         <LinearProgress variant="determinate" value={uploadProgress} sx={{ height: 8, borderRadius: 4 }} />
+                       </Box>
+                     </Box>
+                   )}
 
-                        {/* Success Badge */}
-                        <Box sx={{ position: 'absolute', top: 12, left: 12 }}>
-                          <Chip
-                            icon={<CheckCircleIcon sx={{ fontSize: '14px !important', color: '#FFFCF8 !important' }} />}
-                            label="Upload Successful"
-                            color="success"
-                            size="small"
-                            sx={{ fontWeight: 700, color: '#FFFCF8' }}
-                          />
-                        </Box>
-                      </Card>
-
-                      {/* Image details & Action controls */}
-                      <Stack direction="row" spacing={2} sx={{ mt: 2 }} alignItems="center" flexWrap="wrap" gap={1}>
-                        {uploadedFileName && (
-                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, flexGrow: 1 }}>
-                            File: {uploadedFileName}
-                          </Typography>
-                        )}
-                        <Button size="small" variant="outlined" onClick={() => fileInputRef.current?.click()} sx={{ fontWeight: 700 }}>
-                          Change Image
-                        </Button>
-                        <Button size="small" variant="outlined" onClick={() => setZoomImage(formData.images[0])} sx={{ fontWeight: 700 }}>
-                          View Full Image
-                        </Button>
-                        <Button size="small" variant="text" color="error" onClick={handleRemoveImage} sx={{ fontWeight: 700 }}>
-                          Remove Image
-                        </Button>
-                      </Stack>
-                    </Box>
-                  )}
-
-                  {/* State 1: Idle (or State 4: Error fallback) */}
-                  {!isUploading && formData.images.length === 0 && (
+                   {/* State 1: Idle - always show when not uploading to allow adding more images */}
+                   {!isUploading && (
                     <Box
                       onDragEnter={handleDragEnter}
                       onDragOver={handleDragEnter}

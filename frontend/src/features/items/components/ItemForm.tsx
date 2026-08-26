@@ -141,7 +141,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({ initialData, onSubmit, isLoa
           <ImageUploader
             onUploadSuccess={handleUploadSuccess}
             onUploadRemove={handleUploadRemove}
-            uploadedUrl={currentImageUrl}
+            uploadedUrls={formData.images}
           />
           {currentImageUrl && (
             <Box mt={2}>

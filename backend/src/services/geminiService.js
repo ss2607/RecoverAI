@@ -87,22 +87,39 @@ Return ONLY valid JSON in this exact format:
 const generateVerificationQuestions = async (item) => {
   try {
     const prompt = `
-Generate exactly 5 verification questions to ask a claimant who claims to own this item.
-The questions should verify their ownership based on these item details:
+Generate between 2 and 5 specific verification questions to ask a claimant who claims to own this item.
+These questions must prove that the claimant genuinely knows identifying physical details about the lost/found item without asking for sensitive secrets.
+
+Item details:
 Title: ${item.title}
 Description: ${item.description}
 Category: ${item.category}
+Color: ${item.color || 'unspecified'}
+Brand: ${item.brand || 'unspecified'}
 AI Tags: ${(item.aiTags || []).join(', ')}
-Image URL: ${item.images?.[0] || ''}
+Images: ${(item.images || []).join(', ')}
+
+CRITICAL SECURITY AND PRIVACY RULES:
+1. NEVER generate verification questions that ask for:
+   - PINs, passcodes, passwords, unlock patterns
+   - OTPs, security answers
+   - Banking credentials, account credentials
+   - Any other secret/private authentication information
+2. Questions should be based on physical characteristics that a legitimate owner could reasonably know about the physical item:
+   - Brand, model, approximate size, color, pattern, material
+   - Case/bag, protective cover color/type
+   - Distinctive marks: scratches, cracks, stickers, engravings, distinctive logos/accessories/keychains
+   - Physical layout: number of visible cameras on the back, location of fingerprint sensor, keyboard layout, ports
+   - Contents of the item (e.g., inside a bag/wallet) described in description/tags without requesting sensitive numbers
+3. Do NOT force a fixed count of 5 questions. Generate only as many meaningful questions as the item information can support (minimum 2, maximum 5).
+4. Never create filler questions. Every question must have a clear relationship to the specific item.
+5. Avoid questions whose answers are obvious from the public item title.
 
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
     "Question 1?",
-    "Question 2?",
-    "Question 3?",
-    "Question 4?",
-    "Question 5?"
+    "Question 2?"
   ]
 }
 `;

@@ -53,7 +53,7 @@ export const Footer = () => {
               <MuiLink component={Link} to="/items" color="text.secondary" variant="body2" sx={{ textDecoration: 'none', fontWeight: 500, '&:hover': { color: 'primary.main' } }}>
                 Browse registry
               </MuiLink>
-              <MuiLink component={Link} to="/items/report" color="text.secondary" variant="body2" sx={{ textDecoration: 'none', fontWeight: 500, '&:hover': { color: 'primary.main' } }}>
+              <MuiLink component={Link} to="/items/report?type=lost" color="text.secondary" variant="body2" sx={{ textDecoration: 'none', fontWeight: 500, '&:hover': { color: 'primary.main' } }}>
                 Report lost item
               </MuiLink>
 

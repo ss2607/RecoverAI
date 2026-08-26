@@ -240,13 +240,13 @@ export const UserDashboardPage = () => {
     { 
       title: 'Report Lost Item', 
       icon: <Inventory2OutlinedIcon sx={{ fontSize: 20 }} />, 
-      path: '/items/report', 
+      path: '/items/report?type=lost', 
       desc: 'Log missing item to database' 
     },
     { 
       title: 'Report Found Item', 
       icon: <SearchOutlinedIcon sx={{ fontSize: 20 }} />, 
-      path: '/items/report', 
+      path: '/items/report?type=found', 
       desc: 'Log an item you have recovered' 
     },
     { 
