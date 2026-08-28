@@ -14,6 +14,6 @@ export default defineConfig({
   },
 
   preview: {
-    allowedHosts: ['recoverai-frontend-4tqo.onrender.com']
+    allowedHosts:true
   }
 })
