@@ -1,4 +1,4 @@
-import { Box, Button, Container, Grid, Typography, Card, CardContent, Avatar, Rating } from '@mui/material';
+import { Box, Button, Container, Grid, Typography, Card, CardContent } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { 
   AutoAwesomeOutlined as AutoAwesomeOutlinedIcon,
@@ -99,44 +99,7 @@ export const LandingPage = () => {
         </Container>
       </Box>
 
-      {/* Statistics Section */}
-      <Box 
-        sx={{ 
-          py: 8, 
-          bgcolor: '#FFFDF8', 
-          borderBottom: '1px solid',
-          borderColor: 'rgba(139, 111, 71, 0.08)'
-        }}
-      >
-        <Container maxWidth="lg">
-          <Grid container spacing={4} sx={{ textAlign: 'center' }}>
-            <Grid item xs={12} sm={4}>
-              <Typography variant="h2" sx={{ fontWeight: 800, color: 'secondary.main', fontSize: '3rem' }}>
-                15,240+
-              </Typography>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', mt: 1, letterSpacing: '0.1em' }}>
-                Items Reunited
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Typography variant="h2" sx={{ fontWeight: 800, color: 'secondary.main', fontSize: '3rem' }}>
-                99.4%
-              </Typography>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', mt: 1, letterSpacing: '0.1em' }}>
-                Match Accuracy
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Typography variant="h2" sx={{ fontWeight: 800, color: 'secondary.main', fontSize: '3rem' }}>
-                45,000+
-              </Typography>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', mt: 1, letterSpacing: '0.1em' }}>
-                Active Users
-              </Typography>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
+
 
       {/* Features Section */}
       <Box sx={{ py: 12, bgcolor: 'background.default' }}>
@@ -203,7 +166,7 @@ export const LandingPage = () => {
         </Container>
       </Box>
 
-      {/* How It Works Section */}
+      {/* How RecoverAI Works Section */}
       <Box 
         sx={{ 
           py: 12, 
@@ -215,7 +178,7 @@ export const LandingPage = () => {
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="h2" sx={{ fontWeight: 800, mb: 2 }}>
-              How It Works
+              How RecoverAI Works
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto' }}>
               The seamless pathway from losing an item to getting it safely back in your hands.
@@ -224,13 +187,12 @@ export const LandingPage = () => {
 
           <Grid container spacing={3} sx={{ position: 'relative' }}>
             {[
-              { step: '01', title: 'Report Item', desc: 'Describe the details, add a photo, and specify the approximate location.' },
-              { step: '02', title: 'AI Analysis', desc: 'Our computer vision engine extracts tags and details instantly.' },
-              { step: '03', title: 'Smart Match', desc: 'Algorithms check both databases to cross-reference attributes.' },
-              { step: '04', title: 'Verification', desc: 'The owner answers dynamic security questions to prove identity.' },
-              { step: '05', title: 'Recovery', desc: 'Arrange secure logistics, chat safely, and complete the recovery.' }
+              { step: '01', title: 'Report', desc: 'Users report a lost item and upload its details/image.' },
+              { step: '02', title: 'Match', desc: 'AI analyzes items and identifies potential matches.' },
+              { step: '03', title: 'Verify', desc: 'Users verify ownership using the verification process.' },
+              { step: '04', title: 'Recover', desc: 'Users coordinate the return securely through the platform.' }
             ].map((step, idx) => (
-              <Grid item xs={12} sm={6} md={2.4} key={idx}>
+              <Grid item xs={12} sm={6} md={3} key={idx}>
                 <Box sx={{ p: 2, position: 'relative', height: '100%' }}>
                   <Typography 
                     variant="h3" 
@@ -252,67 +214,6 @@ export const LandingPage = () => {
                     {step.desc}
                   </Typography>
                 </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* Testimonials / Trust Section */}
-      <Box sx={{ py: 12, bgcolor: 'background.default' }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 8 }}>
-            <Typography variant="h2" sx={{ fontWeight: 800, mb: 2 }}>
-              Reunited and Refined
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto' }}>
-              Read testimonies of real people who recovered high-value assets securely.
-            </Typography>
-          </Box>
-
-          <Grid container spacing={4}>
-            {[
-              {
-                name: 'Sarah Jenkins',
-                role: 'Product Designer at Vercel',
-                quote: 'RecoverAI is a game changer. I left my MacBook in an airport terminal, and within 4 hours, a match was suggested. The secure owner-verification questions put me at complete ease.',
-                avatar: 'SJ'
-              },
-              {
-                name: 'David Carter',
-                role: 'Full Stack Engineer',
-                quote: 'I lost my keys at a coffee shop, and a matching report was instantly suggested. The finder and I coordinated a safe meet-up on the built-in chat without sharing private info.',
-                avatar: 'DC'
-              },
-              {
-                name: 'Elena Rostova',
-                role: 'Travel Journalist',
-                quote: 'The AI image tagging is so fast. When I found a lost wallet in a library, I just uploaded a picture. It automatically tagged it, and the owner was found in minutes.',
-                avatar: 'ER'
-              }
-            ].map((testimonial, idx) => (
-              <Grid item xs={12} md={4} key={idx}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <CardContent sx={{ p: 4 }}>
-                    <Rating value={5} readOnly sx={{ mb: 2, color: 'secondary.main' }} size="small" />
-                    <Typography variant="body1" sx={{ fontStyle: 'italic', color: 'text.primary', mb: 4, lineHeight: 1.6 }}>
-                      "{testimonial.quote}"
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ bgcolor: 'secondary.main', color: 'primary.contrastText', fontWeight: 600 }}>
-                        {testimonial.avatar}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                          {testimonial.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {testimonial.role}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
               </Grid>
             ))}
           </Grid>
