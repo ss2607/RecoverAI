@@ -664,7 +664,22 @@ export const ItemDetailsPage = () => {
                 </Typography>
 
                 <Stack spacing={2}>
-                  {isOwner ? (
+                  {item.status === 'returned' || item.itemStatus === 'returned' ? (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        fullWidth
+                        disabled
+                        sx={{ py: 1.5, fontWeight: 700, "&.Mui-disabled": { bgcolor: 'success.main', color: 'success.contrastText', opacity: 0.8 } }}
+                      >
+                        ✅ Item Returned
+                      </Button>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center', fontWeight: 600 }}>
+                        Recovery for this item has been completed.
+                      </Typography>
+                    </>
+                  ) : isOwner ? (
                     <>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontStyle: 'italic', fontWeight: 600 }}>
                         You reported this item.

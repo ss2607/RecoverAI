@@ -338,6 +338,20 @@ export const ItemListPage = () => {
                     </Button>
 
                     {(() => {
+                      if (item.status === 'returned' || item.itemStatus === 'returned') {
+                        return (
+                          <Button 
+                            variant="contained" 
+                            color="success"
+                            fullWidth
+                            disabled
+                            sx={{ py: 1.2, fontWeight: 700, "&.Mui-disabled": { bgcolor: 'success.main', color: 'success.contrastText', opacity: 0.8 } }}
+                          >
+                            ✅ Item Returned
+                          </Button>
+                        );
+                      }
+
                       if (item.isOwner) {
                         return (
                           <Button 
@@ -349,20 +363,6 @@ export const ItemListPage = () => {
                             sx={{ py: 1.2, fontWeight: 700 }}
                           >
                             ✏ Manage Item
-                          </Button>
-                        );
-                      }
-
-                      if (item.itemStatus === 'returned') {
-                        return (
-                          <Button 
-                            variant="contained" 
-                            color="success"
-                            fullWidth
-                            disabled
-                            sx={{ py: 1.2, fontWeight: 700, "&.Mui-disabled": { bgcolor: 'success.main', color: 'success.contrastText', opacity: 0.8 } }}
-                          >
-                            ✅ Returned
                           </Button>
                         );
                       }

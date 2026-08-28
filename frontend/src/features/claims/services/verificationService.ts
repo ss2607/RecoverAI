@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = '/api/claims';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5010';
+const API_URL = `${BASE_URL}/api/claims`;
 
 export interface VerificationQuestion {
   _id: string;
@@ -13,7 +14,19 @@ interface ApiResponse<T> {
   data: T;
 }
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
+
 export const getVerificationQuestions = async (itemId: string): Promise<ApiResponse<VerificationQuestion[]>> => {
-  const response = await axios.get<ApiResponse<VerificationQuestion[]>>(`${API_URL}/item/${itemId}/questions`);
+  const response = await axios.get<ApiResponse<VerificationQuestion[]>>(
+    `${API_URL}/item/${itemId}/questions`,
+    getAuthHeaders()
+  );
   return response.data;
 };

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { Item } from '../../items/services/itemService';
 
-const API_URL = 'http://localhost:5010/api/claims';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5010';
+const API_URL = `${BASE_URL}/api/claims`;
 
 export interface Answer {
   questionId: string;

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = '/api/admin';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5010';
+const API_URL = `${BASE_URL}/api/admin`;
 
 export const adminService = {
   getStats: async (token: string) => {
