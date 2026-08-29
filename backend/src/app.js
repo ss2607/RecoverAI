@@ -5,8 +5,9 @@ const app = express();
 
 app.use(cors({
     origin: [
-        "http://localhost:5173",
-        "http://localhost:5174"
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'https://recoverai-frontend-4tqo.onrender.com'
     ],
     credentials: true
 }));
@@ -23,8 +24,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const conversationRoutes = require('./routes/conversationRoutes');
-
-app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
