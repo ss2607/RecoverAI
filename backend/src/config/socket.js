@@ -14,7 +14,18 @@ const initSocket = (server) => {
 
   io = new Server(server, {
     cors: {
-      origin: origins,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (
+          origin.startsWith('http://localhost') || 
+          origin.endsWith('.onrender.com') ||
+          (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL)
+        ) {
+          callback(null, origin);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true
     }

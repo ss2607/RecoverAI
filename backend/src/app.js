@@ -3,23 +3,23 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'https://recoverai-frontend-4tqo.onrender.com'
-    ],
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (
+            origin.startsWith('http://localhost') || 
+            origin.endsWith('.onrender.com')
+        ) {
+            callback(null, origin);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
-}));
+};
 
-app.options(/.*/, cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'https://recoverai-frontend-4tqo.onrender.com'
-    ],
-    credentials: true
-}));
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 
