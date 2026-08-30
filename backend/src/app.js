@@ -12,6 +12,15 @@ app.use(cors({
     credentials: true
 }));
 
+app.options(/.*/, cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'https://recoverai-frontend-4tqo.onrender.com'
+    ],
+    credentials: true
+}));
+
 app.use(express.json());
 
 const authRoutes = require('./routes/authRoutes');
