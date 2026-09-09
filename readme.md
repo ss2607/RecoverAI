@@ -1,489 +1,688 @@
-RecoverAI
+ 🔎 RecoverAI
 
-An AI-powered Lost & Found platform that intelligently matches lost and found reports, verifies ownership securely, and coordinates exchanges via secure real-time messaging.
+RecoverAI is a full-stack AI-powered Lost & Found platform designed to make item recovery faster, more reliable, and easier to manage. Users can report lost or found items, upload images, receive AI-assisted item analysis and matching recommendations, submit claims, complete dynamic verification, communicate privately, coordinate exchanges, and confirm the final return of an item.
 
-RecoverAI is a full-stack web application designed to modernize traditional lost-and-found workflows for college campuses, workplaces, and organizations. By leveraging AI-powered image analysis, context-aware opposite-type matching, dynamic physical-verification questions, and a strict two-party return confirmation protocol, the platform ensures secure and efficient item recovery.
+Built using React, Node.js, Express.js, MongoDB, Gemini AI, Cloudinary, and Socket.IO.
 
-Architecture
+🌐 Live Demo
 
-                +-----------------------------------+
+Frontend: https://recoverai-frontend-4tqo.onrender.com
 
-                \|         React Frontend            |
+Backend API: https://recoverai-ygw7.onrender.com
 
-                \|          (TypeScript)             |
+GitHub Repository: https://github.com/ss2607/RecoverAI
 
-                +-----------------+-----------------+
+✨ Features
 
-                                  |
+🔎 Lost & Found Item Reporting
 
-                                  \| REST API &
+Report lost or found items
 
-                                  \| WebSockets (Socket.IO)
+Add category, color, brand, condition, description, and tags
 
-                                  v
+Upload multiple images
 
-                +-----------------+-----------------+
+Cloudinary image storage
 
-                \|          Express Backend          |
+Edit active item details
 
-                \|             (Node.js)             |
+View detailed item information
 
-                +----+------------+------------+----+
+🤖 AI-Powered Item Analysis
 
-                     \|            |            |
+RecoverAI uses Google Gemini to assist with:
 
-     Mongoose/MongoDB |            |            |
+Category
 
-                     v            v            v
+Color
 
-         +-----------+---+  +-----+-----+  +---+--------+
+Brand
 
-         \| MongoDB Atlas |  | Gemini AI |  | Cloudinary |
+Condition
 
-         \|   Database    |  |  Service  |  |   Media    |
+Description
 
-         +---------------+  +-----------+  +------------+
+Tags
 
-Core User Workflow
+Fallback verification questions are available if Gemini is temporarily unavailable.
 
-Report Lost / Found Item (Multi-step form with multiple image uploads)
+🧠 AI-Assisted Matching
 
-      │
+The current deterministic matching score uses:
 
-      ▼
+Category → 40 points
 
-AI Image Analysis (Gemini extracts category, color, brand, attributes)
+Color → 20 points
 
-      │
+Brand → 15 points
 
-      ▼
+Each matching AI tag → 5 points
 
-Opposite-Type AI Matching (LOST matches only against FOUND, and vice versa)
+Only opposite item types are matched:
 
-      │
+LOST ↔ FOUND
 
-      ▼
+The system prevents self-matches and duplicate match pairs.
 
-Claim Submission (Claimant answers dynamic non-sensitive verification questions)
+Gemini assists by extracting item attributes; the final compatibility score uses application-defined heuristic weights.
 
-      │
+📋 Claims & Verification
 
-      ▼
+Claim workflow:
 
-Owner Review (Item owner reviews responses and verification score)
-
-      │
-
-      ▼
-
-Claim Approval/Rejection (Approving locks other claims, updates statuses)
-
-      │
-
-      ▼
-
-Secure Real-Time Chat (Socket.IO room unlocks only for approved claimants)
-
-      │
-
-      ▼
-
-Exchange Coordination (Coordinate proposing location and time)
-
-      │
-
-      ▼
-
-Two-Party Return Confirmation (Both Owner and Claimant must confirm exchange)
-
-      │
-
-      ▼
-
-Item Marked Returned & Conversation Archived
-
-Key Features
-
-Authentication & User Management
-
-JWT-based authentication.
-
-User registration and login.
-
-Protected frontend routes.
-
-Role-based authorization.
-
-User profile management.
-
-Password update functionality.
-
-Backend authorization for protected resources.
-
-Lost & Found Management
-
-Report lost items.
-
-Report found items.
-
-Correct Lost/Found report selection through navigation.
-
-Multiple image uploads per item.
-
-Image previews and individual image removal.
-
-Detailed item descriptions.
-
-Category-based organization.
-
-Item status tracking.
-
-Owner-aware item management.
-
-AI-Powered Assistance
-
-Google Gemini-powered image analysis.
-
-Automatic extraction of item attributes.
-
-AI-assisted item description generation.
-
-Context-aware verification question generation.
-
-Verification questions based on physical, non-sensitive item characteristics.
-
-Verification questions never request passwords, PINs, passcodes, OTPs, or other credentials.
-
-Intelligent Matching
-
-AI-powered matching between lost and found reports.
-
-Context-aware opposite-type matching.
-
-Lost reports show relevant Found matches.
-
-Found reports show relevant Lost matches.
-
-Match confidence information.
-
-AI match recommendations on item details pages.
-
-Duplicate and invalid match prevention.
-
-Claim Management
-
-Submit ownership claims directly from registry cards.
-
-Backend validation prevents users from claiming their own items.
-
-Prevent duplicate active claims.
-
-Prevent claims on returned items.
-
-Claim verification questions.
-
-Owner-side claim review.
-
-Claimant-side claim tracking.
-
-Pending, Under Review, Approved, Rejected, and Completed states.
-
-Role-aware claim access and authorization.
-
-Smart Registry Actions
-
-Registry cards dynamically display actions based on the user's relationship with the item:
-
-Claim Item
-
-Pending Review
-
+Claim
+ ↓
+Verification Questions
+ ↓
+Answer Questions
+ ↓
+Submit Claim
+ ↓
 Under Review
+ ↓
+Owner Review
+ ↓
+Approve / Reject
 
-Open Chat
+Includes dynamic verification questions, claimant tracking, owner review, duplicate-claim prevention, self-claim prevention, and returned-item protection.
 
-Claim Rejected
+💬 Private Real-Time Chat
 
-Returned
+After an approved claim, relevant users can communicate through private Socket.IO messaging.
 
-Manage Item
+🤝 Exchange Coordination
 
-View Details
+Approved claims can move into exchange coordination before final return confirmation.
 
-This allows users to understand the current recovery state without repeatedly opening item details.
+✅ Two-Party Return Confirmation
 
-Secure Real-Time Conversations
+Owner confirms return
+        +
+Claimant confirms receipt
+        ↓
+Recovery completed
+        ↓
+Item marked returned
 
-Chat becomes available only after a claim is approved.
+Returned items are restricted from normal active recovery actions.
 
-Dedicated conversation rooms.
+🔔 Dashboard & Notifications
 
-Real-time messaging using Socket.IO.
+Users can track reported items, matches, claims, recovery progress, and relevant notifications.
 
-Instant message synchronization between participants.
-
-Message persistence.
-
-Unread message tracking.
-
-Real-time notifications.
-
-Typing and conversation events.
-
-Conversation access restricted to authorized participants.
-
-Active conversations dashboard.
-
-Conversation history.
-
-Exchange Coordination
-
-After claim approval, users can coordinate the physical exchange through the secure conversation:
-
-Share exchange location.
-
-Propose exchange time.
-
-Exchange-related updates.
-
-Meeting status tracking.
-
-Real-time meeting updates.
-
-Two-Party Return Confirmation
-
-RecoverAI prevents a single participant from declaring an item returned. The exchange follows a two-party confirmation workflow:
-
-Owner confirms
-
-Claimant confirms
-
-Both confirmed -> Claim completed -> Item marked Returned
-
-The item is marked as returned only after both the owner and claimant independently confirm the exchange.
-
-Notifications
-
-Claim notifications.
-
-Claim status updates.
-
-Approval/rejection notifications.
-
-New message notifications.
-
-Exchange and meeting updates.
-
-Return confirmation notifications.
-
-Real-time notification delivery.
-
-Dashboard
-
-User dashboards provide recovery-related statistics and shortcuts, including:
-
-Lost Reports
-
-Found Reports
-
-Pending Claims
-
-My Claims
-
-Claims Under Review
-
-Approved Claims
-
-Rejected Claims
-
-Returned Items
-
-Active Conversations
-
-Dashboard statistics and navigation are role-aware and reflect the appropriate owner-side or claimant-side workflow.
-
-Administration
-
-Role-based administrative access.
-
-Claim moderation.
-
-User management.
-
-Administrative dashboard.
-
-Access-controlled management operations.
-
-Technology Stack
+🛠️ Tech Stack
 
 Frontend
 
-React 19 & TypeScript
+React 19 — UI development
 
-Vite (Build Tool)
+TypeScript — Type safety
 
-Material UI (MUI) 5 & Emotion
+Vite — Build tool
 
-React Router 7
+Material UI — UI components
 
-Axios (API Client)
+Emotion — Styling
 
-Socket.IO Client
+React Router — Client-side routing
+
+Axios — API communication
+
+Socket.IO Client — Real-time communication
 
 Backend
 
-Node.js & Express 5
+Node.js — Runtime
 
-Socket.IO (WebSockets)
+Express.js — Backend framework
 
-JSON Web Tokens (JWT) & Bcrypt
+MongoDB — Database
 
-Multer (File Handling)
+Mongoose — MongoDB ODM
 
-Express Validator (Inputs Verification)
+JWT — Authentication
 
-Database & Cloud
+bcrypt — Password hashing
 
-MongoDB Atlas (Mongoose ODM)
+Google Gemini — AI-assisted analysis
 
-Google Gemini API (@google/genai)
+Cloudinary — Image storage
 
-Cloudinary (Media Hosting)
+Socket.IO — Real-time chat
 
-Project Structure
+Middleware & Security
 
-RecoverAI
+Multer — File uploads
 
-├── backend
+express-validator — Request validation
 
-│   ├── src
+Helmet — Security headers
 
-│   │   ├── config          # Database, socket, and Gemini initializers
+express-rate-limit — Rate limiting
 
-│   │   ├── controllers     # HTTP controllers (auth, items, claims, chat)
+CORS — Cross-origin configuration
 
-│   │   ├── middleware      # Auth guards and error handlers
+dotenv — Environment variables
 
-│   │   ├── models          # Mongoose models (User, Item, Claim, Message, etc.)
+🏗️ Architecture
 
-│   │   ├── routes          # Express API route configurations
+                         ┌──────────────────────┐
+                         │   React + TypeScript  │
+                         │       Frontend       │
+                         └──────────┬───────────┘
+                                    │
+                              REST API / Axios
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │   Node.js + Express   │
+                         │       Backend         │
+                         └──────────┬───────────┘
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │                   │                   │
+                ▼                   ▼                   ▼
+        ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+        │   MongoDB    │    │    Gemini    │    │  Cloudinary  │
+        │   Database   │    │      AI      │    │    Images    │
+        └──────────────┘    └──────────────┘    └──────────────┘
 
-│   │   ├── services        # Business services (AI, claims, verification)
+                         ┌──────────────────────┐
+                         │      Socket.IO       │
+                         │    Private Chat      │
+                         └──────────────────────┘
 
-│   │   ├── utils           # API response helpers and error classes
+Recovery Workflow
 
-│   │   └── server.js       # App entry point
+Report Lost / Found Item
+          ↓
+AI-Assisted Attribute Extraction
+          ↓
+LOST ↔ FOUND Matching
+          ↓
+Potential Match
+          ↓
+Claim Submitted
+          ↓
+Verification Questions
+          ↓
+Owner Review
+       ↙     ↘
+   Reject    Approve
+                ↓
+           Private Chat
+                ↓
+       Exchange Coordination
+                ↓
+      Two-Party Confirmation
+                ↓
+        Item Marked Returned
 
-│   ├── .env.example
+📁 Project Structure
 
-│   └── package.json
-
-├── frontend
-
-│   ├── src
-
-│   │   ├── components      # Reusable UI layouts and footers
-
-│   │   ├── context         # Auth and WebSocket context wrappers
-
-│   │   ├── features        # Feature-driven directories (auth, items, claims)
-
-│   │   ├── pages           # Landing pages and user dashboards
-
-│   │   ├── routes          # React routes config (AppRoutes)
-
-│   │   ├── App.css
-
-│   │   └── main.tsx
-
-│   ├── index.html
-
+RecoverAI/
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── socket/
+│   │   ├── app.js
+│   │   └── server.js
 │   ├── package.json
-
-│   ├── tsconfig.json
-
-│   └── vite.config.ts
-
+│   └── .env
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── context/
+│   │   ├── utils/
+│   │   └── App.tsx
+│   ├── public/
+│   └── package.json
+│
 └── README.md
 
-Installation & Setup
+🔐 Authentication & Authorization
 
-1. Clone the Repository
+RecoverAI uses JWT-based authentication with bcrypt password hashing.
+
+Register / Login
+       ↓
+Credential validation
+       ↓
+bcrypt password verification
+       ↓
+JWT generated
+       ↓
+Protected request
+       ↓
+Authorization: Bearer <token>
+       ↓
+Backend verifies token
+
+Backend authorization also checks resource relationships, such as item ownership and claim access, and restricts administrative functionality.
+
+Lost and Found are item types, not user roles. The main authorization model is authentication, resource ownership, and required administrative roles rather than a complex standalone RBAC permission system.
+
+🧠 Gemini AI Integration
+
+RecoverAI uses Google's Gemini API through the @google/genai SDK.
+
+Gemini assists with:
+
+Item attribute extraction
+
+Image/item understanding
+
+Description generation
+
+Tag generation
+
+Verification question generation
+
+Example structured output:
+
+{
+  "category": "",
+  "color": "",
+  "brand": "",
+  "condition": "",
+  "description": "",
+  "tags": []
+}
+
+AI does not independently guarantee ownership. The claim is still reviewed by the relevant item owner.
+
+🧮 Matching Algorithm
+
+Category match       → 40 points
+Color match          → 20 points
+Brand match          → 15 points
+Each matching tag    →  5 points
+
+Only:
+
+LOST ↔ FOUND
+
+are considered.
+
+The system also prevents:
+
+Self-matching
+
+Duplicate match pairs
+
+Matching an item with itself
+
+The weights are heuristic application-defined values and can be refined later using confirmed recovery outcomes.
+
+📋 Claim & Recovery States
+
+Claim States
+
+pending
+   ↓
+under_review
+   ↓
+approved / rejected
+   ↓
+completed
+
+Item Recovery
+
+Once recovery is completed:
+
+item → returned
+
+Returned items are treated as completed recovery cases and normal active recovery actions are restricted.
+
+🔌 API Structure
+
+/api/auth/*          → Authentication
+/api/items/*         → Lost/found item management
+/api/matches/*       → Match recommendations
+/api/claims/*        → Claims and verification
+/api/admin/*         → Administrative functionality
+
+Socket.IO handles real-time private chat separately from the REST API.
+
+🔑 Key Implementation Details
+
+Frontend
+
+React 19 + TypeScript
+
+Vite
+
+Material UI
+
+React Router
+
+Axios service layer
+
+Protected routes
+
+JWT authentication
+
+Socket.IO real-time chat
+
+Responsive dashboards
+
+Loading skeletons and progress indicators
+
+Backend
+
+Express.js REST API
+
+Controller/service separation
+
+MongoDB with Mongoose
+
+JWT authentication
+
+bcrypt password hashing
+
+Backend authorization
+
+Gemini integration
+
+Cloudinary storage
+
+Socket.IO
+
+Request validation
+
+Centralized API error/response handling
+
+Helmet
+
+Rate limiting
+
+CORS
+
+🛡️ Security & Data Integrity
+
+JWT authentication
+
+bcrypt password hashing
+
+Backend-side authorization
+
+Resource ownership checks
+
+Input validation
+
+Helmet security headers
+
+API rate limiting
+
+Controlled CORS
+
+Environment variables for sensitive credentials
+
+Self-claim prevention
+
+Duplicate claim prevention
+
+Self-match prevention
+
+Duplicate match prevention
+
+Returned-item restrictions
+
+📦 Prerequisites
+
+Node.js
+
+npm
+
+Git
+
+MongoDB Atlas or MongoDB
+
+Google Gemini API key
+
+Cloudinary account
+
+🚀 Installation
+
+1. Clone Repository
 
 git clone https://github.com/ss2607/RecoverAI.git
-
 cd RecoverAI
 
-2. Backend Setup
-
-Navigate to the backend folder:
+2. Setup Backend
 
 cd backend
-
 npm install
 
-Create a .env file inside the backend directory following this format:
+Create backend/.env:
 
-PORT=5010
-
-MONGO_URI=your_mongodb_connection_string
-
-JWT_SECRET=your_jwt_secret_key
-
-JWT_EXPIRES_IN=7d
+MONGODB_URI=your_mongodb_connection_string
+JWT_ACCESS_SECRET=your_jwt_secret
 
 GEMINI_API_KEY=your_gemini_api_key
 
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-
+CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
-
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
-Start the server:
+PORT=5000
+NODE_ENV=development
 
-npm run dev
+Start the backend:
 
+npm start
 
-
-3. Frontend Setup
-
-Open a new terminal and navigate to the frontend folder:
+3. Setup Frontend
 
 cd frontend
-
 npm install
 
-Start the development server:
+Create frontend/.env:
+
+VITE_API_URL=http://localhost:5000/api
+
+Start the frontend:
 
 npm run dev
 
-Open http://localhost:5173 in your browser.
+🏗️ Production Build
 
-Removed Features
+Frontend
 
-QR Code Functionality: QR generation, tag scanning, and matching flows have been completely removed from both the client and backend as they are no longer part of the core RecoverAI workflow.
+cd frontend
+npm run build
 
-Development Status
+The production build is generated in:
 
-Core MVP: Complete. All primary flows (reporting, Gemini image categorization, registry actions, claim verification, Socket.IO messaging, and two-party returns) are fully implemented, verified, and compiling cleanly.
+frontend/dist/
 
-Next Phase: Deployment preparation and staging validation.
+Backend
 
-Screenshots
+cd backend
+npm start
 
-Screenshots and walkthrough recordings demonstrating the visual dashboard, registry action states, and real-time chat can be added here.
+🔒 Environment Variables
 
-Author
+Sensitive credentials should never be committed to GitHub.
+
+Store values such as MongoDB credentials, JWT secrets, Gemini API keys, and Cloudinary credentials in .env files.
+
+Recommended .gitignore entries:
+
+.env
+.env.local
+.env.production
+
+🧪 Testing & Development
+
+Important flows to test include:
+
+Registration and login
+
+JWT-protected requests
+
+Lost/found reporting
+
+Image uploads
+
+Gemini analysis
+
+Matching
+
+Claims
+
+Verification questions
+
+Owner review
+
+Approval/rejection
+
+Private chat
+
+Exchange coordination
+
+Two-party return confirmation
+
+Returned-item restrictions
+
+Duplicate claim prevention
+
+Self-claim prevention
+
+Authorization checks
+
+API validation
+
+Frontend/backend communication
+
+🚀 Deployment
+
+RecoverAI is deployed using Render.
+
+React/Vite frontend → Render
+
+Node.js/Express backend → Render
+
+MongoDB → MongoDB Atlas
+
+AI analysis → Gemini
+
+Image storage → Cloudinary
+
+Real-time communication → Socket.IO
+
+🐞 Troubleshooting
+
+Backend not starting
+
+Check MongoDB connection
+
+Verify environment variables
+
+Run npm install
+
+Check Render/backend logs
+
+Frontend not loading data
+
+Verify VITE_API_URL
+
+Check backend status
+
+Inspect browser Network/Console
+
+Verify CORS configuration
+
+CORS errors
+
+Make sure the backend allows the exact deployed frontend origin and that credentialed requests return the correct origin.
+
+Gemini errors
+
+Verify GEMINI_API_KEY
+
+Check backend logs
+
+Verify model/API configuration
+
+Use fallback verification behavior when available
+
+Image upload problems
+
+Verify Cloudinary credentials
+
+Check Multer configuration
+
+Check multipart form-data requests
+
+📊 Current Status
+
+Version: 1.0
+
+Status: Deployed and functional
+
+Current MVP includes:
+
+Lost/found reporting
+
+AI-assisted item analysis
+
+Matching recommendations
+
+Claims and verification
+
+Owner review
+
+Private real-time chat
+
+Exchange coordination
+
+Two-party return confirmation
+
+Authentication and authorization
+
+Cloudinary image storage
+
+MongoDB persistence
+
+Production deployment
+
+🔮 Future Improvements
+
+Learn matching weights from confirmed recovery outcomes
+
+Improve semantic similarity between item descriptions
+
+Add advanced image similarity models
+
+Location-aware matching
+
+Improved notification delivery
+
+More granular administrative permissions
+
+Recovery analytics
+
+More automated testing and monitoring
+
+Stronger production observability
+
+👩‍💻 Author
 
 Shalu Singh
 
-B.Tech Undergraduate
+GitHub: https://github.com/ss2607
 
-Indian Institute of Information Technology (IIIT) Kota
+📄 License
 
-GitHub: ss2607
-
-License
-
-This project is intended for educational and portfolio purposes.
+This project is released under the MIT License.
